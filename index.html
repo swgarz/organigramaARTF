@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Organigrama — Claro | hojas visibles + acrónimos para todos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root{
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --stroke: #e5e7eb;
+      --text: #0f172a;
+      --muted: #475569;
+      --pill: #eef2ff;
+      --shadow: 0 10px 28px rgba(15, 23, 42, .08);
+      --c1: #2563eb; --c2: #059669; --c3: #ea580c; --c4: #7c3aed; --c5: #0ea5e9;
+      --c6: #d946ef; --c7: #16a34a; --c8: #db2777; --c9: #f59e0b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+    }
+    header{
+      padding:12px 16px; position:sticky; top:0; z-index:5;
+      background:rgba(255,255,255,.92); backdrop-filter: blur(6px);
+      border-bottom:1px solid var(--stroke);
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    h1{font-size:16px; margin:0; letter-spacing:.2px}
+    .toolbar{margin-left:auto; display:flex; gap:8px}
+    .btn{
+      padding:8px 12px; border:1px solid var(--stroke); border-radius:10px;
+      background:#fff; font-weight:600; cursor:pointer; transition:.15s ease;
+      box-shadow:0 1px 2px rgba(2,6,23,.04);
+    }
+    .btn:hover{transform:translateY(-1px)}
+    #chart{height:calc(100vh - 56px); width:100vw; overflow:hidden}
+    svg{width:100%; height:100%}
+
+    /* Enlaces con halo para no confundirse y SIN capturar clics */
+    .links, .links-halo{ pointer-events:none; }
+    .link-halo{ fill:none; stroke:#ffffff; stroke-width:8px; stroke-linecap:round; opacity:.95; }
+    .link{ fill:none; stroke-width:2px; stroke-linecap:round; opacity:.9; }
+
+    /* Nodos (tarjetas) siempre por encima y clicables */
+    .node{ pointer-events:all; }
+    .node-card{ filter: drop-shadow(0 8px 18px rgba(2, 6, 23, .06)); }
+    .node-rect{ fill:var(--card); stroke:var(--stroke); stroke-width:1px; rx:12; ry:12; }
+    .accent-bar{ width:6px; rx:12; ry:12; opacity:.92 }
+    .node-title{ font-weight:750; font-size:14px; fill:#0f172a; }
+    .node-sub{ font-size:12px; fill:#64748b; }
+    .hit{ fill:transparent; cursor:pointer }
+
+    /* Acrónimo en pastilla (siempre visible, derivado si falta) */
+    .badge { pointer-events:none; }
+    .badge-bg{ fill:var(--pill); stroke:#dfe3ff; stroke-width:1px; rx:8; ry:8; }
+    .badge-text{ fill:#3730a3; font-weight:800; font-size:10.7px; letter-spacing:.35px; text-transform:uppercase; }
+
+    .toggle{ fill:#94a3b8; opacity:.95; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Organigrama · ARTF</h1>
+    <div class="toolbar">
+      <button class="btn" id="btn-expand">Expandir todo</button>
+      <button class="btn" id="btn-collapse">Colapsar todo</button>
+      <button class="btn" id="btn-fit">Ajustar a pantalla</button>
+    </div>
+  </header>
+  <div id="chart"></div>
+
+  <!-- === TU JSON TAL CUAL === -->
+  <script>
+  const data = {
+      "name": "Titular de la Agencia",
+      "acrónimo": "",
+      "atributos":"",
+      "children": [
+        {
+          "name": "Dirección General de Economía, Información y Regulación Ferroviaria ",
+          "acrónimo": "DGEIRF",
+          "children": [
+            { "name": "Enlace Administrativo de la Dirección General de Economía, Información, y Regulación Ferroviaria", "acrónimo": "DRE"},
+            { 
+                "name": "Dirección de Regulación Económica", "acrónimo": "DRE",
+                "children": [
+                    {
+                        "name": "Subdirección de Contraprestaciones y Bases de Regulación Tarifaria", "acrónimo": "SCBRT",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Contraprestaciones y Bases de Regulación Tarifaria", "acrónimo": "JDCBRT"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Tarifas de Pasajeros, Carga y Servicios Diversos", "acrónimo": "STPCSD",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Tarifas de Pasajeros, Carga y Servicios Diversos", "acrónimo": "JDTPCSD"}
+                        ]
+                    }
+                ]
+            },
+            { 
+                "name": "Dirección de Evaluación Económica y Financiera", "acrónimo": "DEEF",
+                "children": [
+                            {"name": "Subdirección de Evaluación Económica", "acrónimo": "SEE"},
+                            {
+                                "name": "Subdirección de Análisis Financiero", "acrónimo": "SAF",                            
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Análisis Financiero", "acrónimo": "JDAF"}
+                                ]
+                            }
+                        ]
+            },
+            { 
+                "name": "Dirección de Regulación Técnica Ferroviaria ", "acrónimo": "DRTF",
+                "children": [
+                            {
+                                "name": "Subdirección de Regulación de la Operación Ferroviaria", "acrónimo": "SROF",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Regulación Técnica Ferroviaria", "acrónimo": "JDRTF"}
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Infraestructura Ferroviaria", "acrónimo": "SIF",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Regulación de Infraestructura", "acrónimo": "JDRI"}
+                                ]
+                            }
+                        ]
+            },
+            { 
+                "name": "Dirección de Información y Estadística Ferroviaria ", "acrónimo": "DIEF",
+                "children": [
+                    {
+                        "name": "Subdirección de Estadística Ferroviaria", "acrónimo": "JDRI",
+                        "children": [
+                                {"name": "Jefatura de Departamento de Estadística Ferroviaria", "acrónimo": "JDEF"},
+                                {"name": "Enlace de Información", "acrónimo": "EI"},
+                                {"name": "Enlace de Estadística", "acrónimo": "EE"}
+                        ]
+                    }
+                ]
+            }
+        ]
+        },
+        {
+          "name": "Dirección General de Verificación, Supervisión y Registro ", "acrónimo": "DGVSR",          
+          "children": [
+            { "name": "Enlace Administrativo de la Dirección General de Verificación, Supervisión y Registro", "acrónimo": "EADGVSR" },
+            { "name": "Subdirección de Coordinación con Centros SICT", "acrónimo": "SCCSICT" },
+            { "name": "Subdirección de Análisis de la Operación y Seguridad", "acrónimo": "SAOS"},
+            { "name": "Enlace de Operación y Seguridad", "acrónimo": "EADGV" },
+            { 
+                "name": "Dirección de Verificación y Supervisión Ferroviaria \"A\"", "acrónimo": "DVSF\"A\"",
+                "children": [
+                                {"name": "Enlace de Verificación y Supervisión Ferroviaria \"A\"", "acrónimo": "EVSF"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"A\"", "acrónimo": "SVSFA"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"B\"", "acrónimo": "SVSFB"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"C\"", "acrónimo": "SVSFC"}
+                        ]
+            },
+            { 
+                "name": "Dirección de Verificación y Supervisión Ferroviaria \"B\"", "acrónimo": "DVSF\"B\"",
+                "children": [
+                                {"name": "Enlace de Verificación y Supervisión Ferroviaria \"B\"", "acrónimo": "EVSF"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"D\"", "acrónimo": "SVSFD"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"E\"", "acrónimo": "SVSFE"},
+                                {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"F\"", "acrónimo": "SVSFF"}
+                        ] 
+            },
+            { 
+                "name": "Dirección de Verificación y Supervisión Ferroviaria C", "acrónimo": "DVSF\"C\"",
+                "children": [
+                        {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"G\"", "acrónimo": "SVSFG"},                                
+                        {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"H\"", "acrónimo": "SVSFH"}
+                ] 
+             },
+            { 
+                "name": "Dirección de Registro Ferroviario Mexicano", "acrónimo": "DRFM",
+                "children": [                                                       
+                        {"name": "Subdirección de Registro Ferroviario Mexicano", "acrónimo": "SRFM"}
+                ]  
+            },
+            { 
+                "name": "Dirección de Seguridad Ferroviaria", "acrónimo": "DSF",
+                "children": [                                                       
+                    {"name": "Subdirección de Seguimiento de Siniestros Ferroviarios", "acrónimo": "SSSF"},
+                    {"name": "Subdirección de Programas de Seguridad Ferroviaria", "acrónimo": "SPSF"}
+                ] 
+            }
+          ]
+        },
+        { "name": "Dirección General de Planeación y Proyectos de Transporte Público ", "acrónimo": "DGPPTP",
+          "children": [
+            { 
+                "name": "Dirección de Estudios de Transporte", "acrónimo": "DET",
+                "children": [                    
+                       {
+                        "name": "Subdirección de Estudios de Demanda", "acrónimo": "SED",
+                        "children": [{"name": "Jefatura de Departamento de Estudios de Demanda", "acrónimo": "JDED"}]
+                    },
+                       {"name": "Subdirección de Análisis Geográfico", "acrónimo": "SAG"},
+                       {
+                        "name": "Subdirección de Ingeniería de Transporte Público y Vial", "acrónimo": "SITPV",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Modelación de Transporte", "acrónimo": "JDMT"},
+                            {"name": "Jefatura de Departamento de Análisis", "acrónimo": "JDA"}
+                        ]
+                    }                    
+                ] 
+            },
+            { 
+                "name": "Dirección de Proyectos de Transporte", "acrónimo": "DPT",
+                "children": [
+                    { 
+                        "name": "Subdirección de Seguimiento de Proyectos de Transporte", "acrónimo":"SSPT",
+                        "children" : [
+                            {"name": "Jefatura de Departamento de Diseño y Señalamiento Vial", "acrónimo": "JDDSV"},
+                            {"name": "Jefatura de Departamento de Proyectos de Transporte", "acrónimo": "JDPT"}
+                        ]
+                    },
+                    { 
+                        "name": "Subdirección de Regulación y Normatividad", "acrónimo": "SRN",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Consulta", "acrónimo": "JDC"}
+                        ]
+                    }
+                ] 
+            },
+            { 
+                "name": "Dirección de Integración de Transporte", "acrónimo": "DIT",
+                "children": [                    
+                    {
+                        "name": "Subdirección de Integración de Transporte", "acrónimo": "SIT",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Transporte Modal", "acrónimo": "JDTM"},
+                            {"name": "Jefatura de Departamento de Accesibilidad", "acrónimo": "JDA"}
+                        ]
+                    }
+                ] 
+            },
+            { "name": "Enlace de Planeación de Transporte", "acrónimo": "EPT" }
+          ]
+        },
+        { "name": "Dirección General de Proyectos Ferroviarios ", "acrónimo": "DGPF",
+          "children": [
+            { "name": "Enlace Administrativo de la Dirección General de Proyectos Ferroviarios", "acrónimo": "EADGPF" },
+            { "name": "Enlace Técnico Administrativo", "acrónimo": "ETA" },
+            { 
+                "name": "Dirección de Proyectos Ferroviarios de Pasajeros", "acrónimo": "DPFP",
+                "children": [
+                    {
+                        "name": "Subdirección de Coordinación y Seguimiento de Proyectos Ferroviarios de Pasajeros", "acrónimo": "SCSPFP",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Seguimiento de la Infraestructura de Proyectos Ferroviarios", "acrónimo": "JDSIPF"},
+                            {"name": "Jefatura de Departamento de Diseño de Proyectos Ferroviarios", "acrónimo": "JDDPF"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Planeación y Evaluación de Proyectos Ferroviarios ", "acrónimo": "SPEPF",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Estudios de Proyectos Ferroviarios", "acrónimo": "JDEPF"},
+                            {"name": "Jefatura de Departamento de Análisis Operacional de Proyectos Ferroviarios", "acrónimo": "JDAOPF"}
+                        ]
+                    }
+                ] 
+            },
+            { 
+                "name": "Dirección de Proyectos Ferroviarios de Carga y Desarrollo Multimodal", "acrónimo": "DPFCDM",
+                "children": [
+                    { "name": "Subdirección de Coordinación y Seguimiento de Proyectos Ferroviarios de Carga", "acrónimo": "SCSPFC" },
+                    {
+                        "name": "Subdirección de Desarrollo Multimodal y de Servicios Auxiliares", "acrónimo": "SDMSA",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Desarollo Multimodal", "acrónimo": "JDDM"},
+                            {"name": "Jefatura de Departamento de Servicios Auxiliares Ferroviarios", "acrónimo": "JDSAF"}
+                        ] 
+                    }
+                ] 
+            }            
+                        
+          ]
+        },
+        { "name": "Dirección General de Asuntos Jurídicos", "acrónimo": "DGAJ",
+          "children": [
+            { "name": "Jefatura de Departamento de Transparencia a Acceso a la información", "acrónimo": "JDTAI" },
+            { 
+                "name": "Dirección de lo Consultivo", "acrónimo": "DCONS",
+                "children": [                    
+                    {
+                        "name": "Subdirección Jurídica de Instrumentos Regulatorios", "acrónimo": "SJIR",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Análisis Técnico-Normativo del Sector Ferroviario", "acrónimo": "JDATNSF"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Consulta Legal", "acrónimo": "SCL",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Contratos y Convenios", "acrónimo": "JDCC"},
+                            {"name": "Jefatura de Departamento de Seguimiento a Órganos", "acrónimo": "JDSO"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección Jurídica de Concesiones, Asignaciones y Permisos", "acrónimo": "SJCAP",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Análisis Jurídico de Concesiones, Asignaciones y Permisos", "acrónimo": "JDAJCAP"}
+                        ]
+                    }
+                ] 
+            },
+            { 
+                "name": "Dirección de lo Contencioso", "acrónimo": "DCONT",
+                "children": [
+                    {
+                        "name": "Subdirección de Procedimientos de Sanción", "acrónimo": "SPS",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Procedimientos Administrativos de Sanción", "acrónimo": "JDPAS"},
+                            {"name": "Jefatura de Departamento de Asuntos Laborales, Civiles, Agrarios y Penales", "acrónimo": "JDPAS"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Juicios y Controversias", "acrónimo": "SJC",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Juicios de Nulidad y Amparo", "acrónimo": "JDJNA"}
+                        ]
+                    }
+                ] 
+            },
+            { 
+                "name": "Dirección Jurídica de Coordinación de Liberación de Derecho de Vía", "acrónimo": "DJCLDV",
+                "children": [
+                    {
+                        "name": "Subdirección Jurídica de Integración de Expedientes de Derecho de Vía ", "acrónimo": "SJIEDV0",
+                        "children":[
+                            {
+                                "name": "Jefatura de Departamento Jurídico de Integración de Expedientes de Derecho de Vía", "acrónimo": "JDJIEDV",
+                                "children": [
+                                    {"name": "Enlace Jurídico de Integración de Expedientes de Derecho de Vía", "acrónimo": "EJIEDV"}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Subdirección Jurídica de Coordinación y Gestión de Derecho de Vía", "acrónimo": "SJCGDV",
+                        "children": [
+                            {"name": "Jefatura de Departamento Jurídico de Coordinación de Gestión de Derechos de Vía", "acrónimo": "JDJCGDV"}
+                        ]
+                    }
+                ]
+            },
+            { 
+                "name": "Dirección Jurídica de Obras", "acrónimo": "DJO",
+                "children": [
+                    {
+                        "name": "Subdirección de Gestión Jurídica de Obras", "acrónimo": "SGJO",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Gestión Jurídica de Obras A", "acrónimo": "JDGJOA"},
+                            {"name": "Jefatura de Departamento de Gestión Jurídica de Obras B", "acrónimo": "JDGJOB"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Gestión Técnica y Seguimiento a Órganos de Control de Obras", "acrónimo": "SGTSOCO",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Gestión Técnica de Obras", "acrónimo": "JDGTO"},
+                            {"name": "Jefatura de Departamento de Seguimiento en Materia de Obras a Órganos Fiscalizadores", "acrónimo": "JDSMOOF"}
+                        ]
+
+                    }
+                ] 
+            }
+          ]
+        },
+        { "name": "Dirección General de Administración y Finanzas ", "acrónimo": "DGAF",
+          "children": [
+            { "name": "Enlace Administrativo de la Dirección General de Administración y Finanzas ", "acrónimo": "EADGAF", },
+            { 
+                "name": "Dirección de Recursos Materiales y Servicios Generales", "acrónimo": "DRMSG", 
+                "children": [
+                    {
+                        "name": "Subdirección de Servicios Generales", "acrónimo": "SSG",
+                        "children": [
+                            {
+                                "name": "Jefatura de Departamento de Almacenes e Inventarios", "acrónimo": "JDAI",
+                                "children": [
+                                    {"name": "Enlace Control de Almacenes e Inventarios", "acrónimo": "ECAI"}
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Recursos Materiales, Procedimientos y Contratos", "acrónimo": "SRMPC",
+                        "children": [
+                            {
+                                "name": "Jefatura de Departamento de Procedimientos", "acrónimo": "JDP",
+                                "children": [
+                                    {"name": "Enlace de Procedimientos", "acrónimo": "EP"},
+                                    {"name": "Enlace de Recursos Materiales", "acrónimo": "ERM"}
+                                ]
+                            },
+                            {
+                                "name": "Jefatura de Departamento de Contratos", "acrónimo": "JDC",
+                                "children": [
+                                    {"name": "Enlace de Contratos", "acrónimo": "EC"},
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            { 
+                "name": "Dirección de Recursos Financieros", "acrónimo": "DRF",
+                "children": [
+                    { 
+                        "name": "Subdirección de Presupuesto", "acrónimo": "SP",
+                        "children": [
+                            {"name": "Enlace al Presupuesto", "acrónimo": "EP"}
+                        ] 
+                    },
+                    { 
+                        "name": "Subdirección de Contabilidad y Pagos", "acrónimo": "DTIP",
+                        "children": [
+                            {"name": "Enlace de Contabilidad y Pagos", "acrónimo": "EP"}
+                        ] 
+                     },
+                ] 
+            },
+            { 
+                "name": "Dirección de Recursos Humanos", "acrónimo": "DRR.HH.",
+                "children": [
+                            {
+                                "name": "Subdirección de Recursos Humanos y Relaciones Laborales", "acrónimo": "EP",
+                                "children": [
+                                    {"name": "Enlace de Recursos Humanos", "acrónimo": "ERH"},
+                                    {"name": "Enlace de Relaciones Laborales", "acrónimo": "ERL"}
+                                 ] 
+                            }
+                        ]  
+            },
+            { 
+                "name": "Dirección de Tecnologías de La Información y de Proyectos", "acrónimo": "DTIP",
+                "children": [
+                    {
+                        "name": "Subdirección de Sistemas Información", "acrónimo": "SSI",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Especialista de Pruebas", "acrónimo": "JDEP"},
+                            {"name": "Jefatura de Departamento de Desarrollo de Sistemas de Información", "acrónimo": "JDDSI"},
+                            {
+                                "name": "Jefatura de Departamento de Administración de Sistemas de Información", "acrónimo": "JDASI",
+                                "children": [
+                                    {"name": "Enlace Soporte Técnico e Infraestructura Informática", "acrónimo": "ESTII"},
+                                    {"name": "Enlace a Redes y Comunicaciones", "acrónimo": "ERC"}
+                                ]
+                            }
+                        ]
+                    }
+                ] 
+            },
+            { 
+                "name": "Dirección Financiera de Obras", "acrónimo": "DFO",
+                "children": [
+                    {
+                        "name": "Subdirección de Recursos Materiales y Servicios Generales de Obras", "acrónimo": "SRMSGO",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Recursos Materiales de Obras", "acrónimo": "JDRMO"},
+                            {"name": "Jefatura de Departamento de Servicios Generales de Obras", "acrónimo": "JDSGO"}
+                        ]
+                    },
+                    {
+                        "name": "Subdirección de Administración y Recursos Financieros de Obras", "acrónimo": "JDDSI",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Administración de Obras ", "acrónimo": "JDRMO"},
+                            {"name": "Jefatura de Departamento de Recursos Financieros de Obras", "acrónimo": "JDRFO"}
+                        ]
+                    }
+                ] 
+            }
+          ]
+        },
+        { "name": "Dirección General de Seguimiento a Proyectos y Asuntos Estratégicos ", "acrónimo": "DGSPAE",
+          "children": [
+            { 
+                "name": "Coordinación de Relaciones Institucionales con Asignatarios y Concesionarios", "acrónimo": "CRIAC",
+                "children": [
+                    {"name": "Subdirección de Vinculación con Asignatarios y Concesionarios", "acrónimo": "JDRFO"}
+                ] 
+            },            
+            { 
+                "name": "Dirección de Programación de Proyectos Estratégicos", "acrónimo": "DPPE",
+                "children": [
+                    {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"A\" ", "acrónimo": "SPSPEA"},
+                    {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"B\" ", "acrónimo": "SPSPEB"},
+                    {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"C\" ", "acrónimo": "SPSPEC"}
+                        ] 
+            },
+            { 
+                "name": "Dirección de Coordinación Técnica y Seguimiento de Proyectos", "acrónimo": "DCTSP",
+                 "children": [
+                    {"name": "Jefatura de Análisis Técnico de Proyectos", "acrónimo": "JATP"},
+                    {"name": "Enlace de Gestión", "acrónimo": "EG"},
+                    {"name": "Subdirección de Coordinación Técnica de Proyectos \"A\"", "acrónimo": "SCTPA"},
+                    {"name": "Subdirección de Coordinación Técnica de Proyectos \"B\"", "acrónimo": "SCTPB"},
+                    {
+                        "name": "Subdirección de Seguimientos de Proyectos", "acrónimo": "SSP",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Seguimiento de Proyectos \"A\"", "acrónimo": "JDSPA"},
+                            {"name": "Jefatura de Departamento de Seguimiento de Proyectos \"B\"", "acrónimo": "JDSPB"}
+                        ]
+                    }
+                        ] 
+            }
+          ]
+        },
+        { "name": "Secretario Particular", "acrónimo": "SP",
+          "children": [
+            { 
+                "name": "Subdirección de Control Institucional", "acrónimo": "SCI",
+                "children": [
+                    {"name": "Enlace Logístico", "acrónimo":"EL"}
+                ] 
+            },
+            { 
+                "name": "Subdirección de Control de Gestión", "acrónimo": "SCG",
+                "children": [
+                    {"name": "Jefatura de Departamento de Atención Ciudadana", "acrónimo":"JDAC"},
+                    {"name": "Jefatura de Departamento de Control de Gestión y Registro", "acrónimo":"JDCGR"}
+                ]
+            }
+          ]
+        },
+        { 
+            "name": "Coordinación General de Construcción de Vías y Trenes", "acrónimo": "CGCVT",
+            "children": [
+            { 
+                "name": "Dirección General Técnica", "acrónimo": "DGT",
+                "children": [
+                    { 
+                        "name": "Subdirección de Control Documental Técnica", "acrónimo": "SCDT",
+                        "children": [
+                            {"name": "Enlace de Control Documental", "acrónimo": "ECD"}
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Planeación y Programación de Obras", "acrónimo": "DPPO",
+                        "children": [
+                            { "name": "Subdirección de Planeación y Programación de Obras", "acrónimo": "SPPO" },
+                            { "name": "Jefatura de Departamento de Programación", "acrónimo": "JDP" },
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Diseño y Proyecto", "acrónimo": "DDP",
+                        "children": [
+                            { 
+                                "name": "Subdirección de Diseño de Ingeniería y Proyecto", "acrónimo": "SDIP",
+                                "children": [
+                                     {"name": "Jefatura de Departamento de Ingeniería y Proyecto", "acrónimo": "SJDIP"}                            
+                                ] 
+                            },
+                            { 
+                                "name": "Subdirección de Ingeniería Ferroviaria", "acrónimo": "SIF",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Ingeniería Ferroviaría", "acrónimo": "JDIF"}
+                                ] 
+                            },
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Material Rodante y Sistemas Ferroviarios", "acrónimo": "DMRSF",
+                        "children": [
+                            {"name": "Subdirección de Material Rodante", "acrónimo": "JDIF"},
+                            {"name": "Subdirección de Sistemas Ferroviarios y Mantenimiento", "acrónimo": "JDIF"}
+                        ] 
+                    }
+                ]
+            },
+            { 
+                "name": "Dirección General de Obras", "acrónimo": "DGO",
+                "children": [
+                    { 
+                        "name": "Subdirección de Control Documental de Obras", "acrónimo": "SCDO",
+                        "children": [
+                            {"name": "Jefatura de Departamento de Control Documental de Obras \"A\"", "acrónimo": "JDCDOA"},
+                            {
+                                "name": "Jefatura de Departamento de Control Documental de Obras \"B\"", "acrónimo": "JDCDOB",
+                                "children": [
+                                    {"name": "Enlace de Control Documental de Obras", "acrónimo": "ECDO"}
+                                ]
+                            }
+                        ]
+                    },
+                    { 
+                        "name": "Dirección de Ingeniería de Concursos y Costos de Obras", "acrónimo": "DICCO",
+                        "children": [
+                            {
+                                "name": "Subdirección de Concursos, Control y Estadística de Obra", "acrónimo": "SCCEO",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Concursos y Licitaciones", "acrónimo": "JDCL" },
+                                    {"name": "Jefatura de Departamento de Control y Estadística de Obras", "acrónimo": "JDCEO" }
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Ingeniería de Costos de Obras", "acrónimo": "SICO",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Ingeniería de Costos", "acrónimo": "JDIC"}                                    
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Administración y Estimación de Obras",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Estimaciones de Obras \"A\"", "acrónimo": "JDEOA"},
+                                    {"name": "Jefatura de Departamento de Estimaciones de Obras \"B\"", "acrónimo": "JDEOB"}
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Obras Inducidas",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Afectaciones", "acrónimo": "JDA"}
+                                ]
+                            }
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Construcción de Obras A", "acrónimo": "DCO\"A\"",
+                        "children": [
+                            {
+                                "name": "Subdirección de Construcción de Obras \"A1\"", "acrónimo": "SCOA1",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"A1-A\"", "acrónimo": "JDOA1A"},
+                                    {"name": "Jefatura de Departamento de Obra \"A1-B\"", "acrónimo": "JDOA1B"},
+                                    {"name": "Jefatura de Departamento de Obra \"A1-C\"", "acrónimo": "JDOA1C"}
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Construcción de Obras \"A2\"", "acrónimo": "SCOA2",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"A2-A\"", "acrónimo": "JDOA2A"},
+                                    {"name": "Jefatura de Departamento de Obra \"A2-B\"", "acrónimo": "JDOA2B"},
+                                    {"name": "Jefatura de Departamento de Obra \"A2-C\"", "acrónimo": "JDOA2C"}
+                                ]
+                            }
+                        ]
+                    },
+                    { 
+                        "name": "Dirección de Construcción de Obras B", "acrónimo": "DCO\"B\"",
+                        "children": [
+                            {
+                                "name": "Subdirección de Construcción de Obras \"B1\"", "acrónimo": "SCOB1",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"B1-A\"", "acrónimo": "JDOB1A"},
+                                    {"name": "Jefatura de Departamento de Obra \"B1-B\"", "acrónimo": "JDOB1B"},
+                                    {"name": "Jefatura de Departamento de Obra \"B1-C\"", "acrónimo": "JDOB1C"}
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Construcción de Obras \"B2\"", "acrónimo": "SCOB2",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"B2-A\"", "acrónimo": "JDOB2A"},
+                                    {"name": "Jefatura de Departamento de Obra \"B2-B\"", "acrónimo": "JDOB2B"},
+                                    {"name": "Jefatura de Departamento de Obra \"B2-C\"", "acrónimo": "JDOB2C"}
+                                ]
+                            }
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Construcción de Obras C", "acrónimo": "DCO\"C\"",
+                        "children": [
+                            {
+                                "name": "Subdirección de Construcción de Obras \"C1\"", "acrónimo": "SCOC1",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"C1-A\"", "acrónimo": "JDOC1A"},
+                                    {"name": "Jefatura de Departamento de Obra \"C1-B\"", "acrónimo": "JDOC1B"},
+                                    {"name": "Jefatura de Departamento de Obra \"C1-C\"", "acrónimo": "JDOC1C"}
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Construcción de Obras \"C2\"", "acrónimo": "SCOC2",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"C2-A\"", "acrónimo": "JDOC2A"},
+                                    {"name": "Jefatura de Departamento de Obra \"C2-B\"", "acrónimo": "JDOC2B"},
+                                    {"name": "Jefatura de Departamento de Obra \"C2-C\"", "acrónimo": "JDOC2C"}
+                                ]
+                            }
+                        ]  
+                    },
+                    { 
+                        "name": "Dirección de Construcción de Obras D", "acrónimo": "DCO\"D\"",
+                        "children": [
+                            {
+                                "name": "Subdirección de Construcción de Obras \"D1\"", "acrónimo": "SCOD1",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"D1-A\"", "acrónimo": "JDOD1A"},
+                                    {"name": "Jefatura de Departamento de Obra \"D1-B\"", "acrónimo": "JDOD1B"}                                    
+                                ]
+                            },
+                            {
+                                "name": "Subdirección de Construcción de Obras \"D2\"", "acrónimo": "SCOD2",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Obra \"D2-A\"", "acrónimo": "JDOD2A"},
+                                    {"name": "Jefatura de Departamento de Obra \"D2-B\"", "acrónimo": "JDOD2B"}                                    
+                                ]
+                            }
+                        ]  
+                    },
+                    { 
+                        "name": "Dirección de Edificación", "acrónimo": "DE",
+                        "children": [
+                            {
+                                "name": "Subdirección de Edificación", "acrónimo": "SE",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de EDIFICACIÓN \"A\"", "acrónimo": "JDEA"},
+                                    {"name": "Jefatura de Departamento de EDIFICACIÓN \"B\"", "acrónimo": "JDEB"}                                  
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            { 
+                "name": "Dirección General Control y Gestión Interna de Obras", "acrónimo": "DGCGIO",
+                "children": [
+                    { 
+                        "name": "Dirección de Procesos Administrativos de Obras", "acrónimo": "DPAO",
+                        "children": [
+                            {
+                                "name": "Subdirección de Implementación de Manuales y Procedimientos de Obras", "acrónimo": "SIMPO",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Implementación de Manuales y Procedimientos de Obra \"A\"", "acrónimo": "JDIMPOA"},
+                                    {"name": "Jefatura de Departamento de Implementación de Manuales y Procedimientos de Obra \"B\"", "acrónimo": "JDIMPOB"}                                  
+                                ]
+                            }                            
+                        ] 
+                    },
+                    { 
+                        "name": "Dirección de Gestión de Sistemas de Archivos de Obras", "acrónimo": "DGSAO",
+                         "children": [
+                            {
+                                "name": "Subdirección de Archivos de Obras", "acrónimo": "SAO",
+                                "children": [
+                                    {"name": "Jefatura de Departamento de Archivos de Obras \"A\"", "acrónimo": "JDAOA"},
+                                    {"name": "Jefatura de Departamento de Archivos de Obras \"B\"", "acrónimo": "JDAOB"}                                  
+                                ]
+                            }                            
+                        ]
+                    }
+                ]
+            }
+          ]
+        },
+        
+      ]
+    };
+  </script>
+
+  <!-- === RENDER === -->
+  <script>
+  (function () {
+    const host = document.getElementById('chart');
+
+    /* Layout más holgado (hojas no se “tapan”) */
+    const dx = 56;            // separación vertical mayor
+    const dy = 320;           // separación horizontal
+    const MAX_TEXT_W = 270;   // ancho de texto
+    const PAD_X = 16, PAD_BOTTOM = 12;
+    const BADGE_H = 18, BADGE_PAD = 8;
+    const PAD_TOP = BADGE_H + BADGE_PAD + 8; // espacio reservado al acrónimo
+
+    const colors = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)','var(--c8)','var(--c9)'];
+
+    const svg  = d3.select(host).append('svg');
+    const gRoot = svg.append('g');
+    const gLinksHalo = gRoot.append('g').attr('class','links-halo');
+    const gLinks     = gRoot.append('g').attr('class','links');
+    const gNodes     = gRoot.append('g').attr('class','nodes');
+
+    /* Zoom & pan */
+    const zoom = d3.zoom().scaleExtent([0.5, 2.6]).on('zoom', (ev)=> gRoot.attr('transform', ev.transform));
+    svg.call(zoom);
+
+    /* Árbol */
+    const tree = d3.tree().nodeSize([dx, dy]).separation((a,b)=> (a.parent===b.parent ? 1.2 : 1.6));
+
+    const root = d3.hierarchy(data);
+    root.x0 = 0; root.y0 = 0;
+
+    // Colapsar todo menos el primer nivel
+    root.descendants().forEach(d=>{ d._children = d.children; });
+    root.children = root._children; root._children = null;
+    if (root.children) root.children.forEach(c=>{ c.children = c._children; c._children = null; });
+
+    /* ===== Helpers ===== */
+    const STOP = new Set(['de','del','la','las','los','y','e','a','en','para','the','and','of','da','do','das','dos']);
+    function simplify(s){ return (s||'').normalize?.('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^A-Za-z0-9\s]/g,'') || (s||''); }
+    function deriveAcronym(name){
+      const t = simplify(name).trim().split(/\s+/).filter(w=> w && !STOP.has(w.toLowerCase()));
+      const ac = t.map(w=> w[0]).join('').toUpperCase();
+      return ac.slice(0, 8) || '—';
+    }
+    function getAcr(d){
+      const a = (d.data["acrónimo"] ?? d.data["acronimo"] ?? '').toString().trim();
+      return a || deriveAcronym(d.data.name || '');
+    }
+
+    function wrap(sel, text, maxWidth, lineH){
+      const words = (text||'').split(/\s+/).filter(Boolean);
+      sel.text(null);
+      let line=[], tspan = sel.append('tspan').attr('x', PAD_X);
+      for (let i=0;i<words.length;i++){
+        line.push(words[i]); tspan.text(line.join(' '));
+        if (tspan.node().getComputedTextLength() > maxWidth){
+          line.pop(); tspan.text(line.join(' '));
+          line = [words[i]];
+          tspan = sel.append('tspan').attr('x', PAD_X).attr('dy', lineH).text(words[i]);
+        }
+      }
+      return sel.selectAll('tspan').size();
+    }
+
+    function toggle(d){ if(d.children){ d._children=d.children; d.children=null; } else { d.children=d._children; d._children=null; } }
+    const elbow = (s, t) => {
+      const mx = (s.y + t.y) / 2;
+      return `M ${s.y},${s.x} C ${mx},${s.x} ${mx},${t.x} ${t.y},${t.x}`;
+    };
+    function branchColor(node){
+      let a = node;
+      while (a && a.depth > 1) a = a.parent;
+      if (!a || !root.children) return colors[0];
+      const idx = Math.max(0, root.children.indexOf(a)) % colors.length;
+      return colors[idx];
+    }
+
+    function update(source){
+      tree(root);
+      const nodes = root.descendants();
+      const links = root.links();
+
+      /* LINKS (halo + línea) */
+      const linkHalo = gLinksHalo.selectAll('path').data(links, d=> d.target.id || (d.target.id = Math.random().toString(36).slice(2)));
+      linkHalo.enter().append('path')
+        .attr('class','link-halo')
+        .attr('d', _ => elbow({y:source.y0, x:source.x0}, {y:source.y0, x:source.x0}))
+        .merge(linkHalo)
+        .transition().duration(420)
+        .attr('d', d => elbow(d.source, d.target));
+      linkHalo.exit().transition().duration(250)
+        .attr('d', _ => elbow({y:source.y, x:source.x}, {y:source.y, x:source.x}))
+        .remove();
+
+      const link = gLinks.selectAll('path').data(links, d=> d.target.id);
+      link.enter().append('path')
+        .attr('class','link')
+        .attr('stroke', d => branchColor(d.source))
+        .attr('d', _ => elbow({y:source.y0, x:source.x0}, {y:source.y0, x:source.x0}))
+        .merge(link)
+        .transition().duration(420)
+        .attr('stroke', d => branchColor(d.source))
+        .attr('d', d => elbow(d.source, d.target));
+      link.exit().transition().duration(250)
+        .attr('d', _ => elbow({y:source.y, x:source.x}, {y:source.y, x:source.x}))
+        .remove();
+
+      /* NODES */
+      const node = gNodes.selectAll('g.node').data(nodes, d=> d.id || (d.id = Math.random().toString(36).slice(2)));
+      const enter = node.enter().append('g')
+        .attr('class','node')
+        .attr('transform', _ => `translate(${source.y0},${source.x0})`)
+        .style('opacity', 0)
+        .on('click', (ev,d)=>{ toggle(d); update(d); });
+
+      const card = enter.append('g').attr('class','node-card');
+      const rect = card.append('rect').attr('class','node-rect');
+      const accent = card.append('rect').attr('class','accent-bar').attr('x', -6).attr('y', -6).attr('width', 6);
+      const title = card.append('text').attr('class','node-title');
+      const subtitle = card.append('text').attr('class','node-sub');
+      const toggleIcon = card.append('path').attr('class','toggle');
+      const hit = card.append('rect').attr('class','hit');
+
+      /* Acrónimo (siempre) */
+      const badge = card.append('g').attr('class','badge');
+      const badgeBg = badge.append('rect').attr('class','badge-bg');
+      const badgeTx = badge.append('text').attr('class','badge-text');
+
+      enter.each(function(d){
+        const g = d3.select(this).select('.node-card');
+
+        // Título
+        const lines = wrap(g.select('.node-title'), (d.data.name||''), MAX_TEXT_W, 16);
+        const titleH = lines * 16;
+
+        // Subtítulo opcional
+        const meta = (d.data.atributos||'').trim();
+        let subH = 0;
+        if (meta){
+          g.select('.node-sub').text(meta).attr('x', PAD_X).attr('dy', 16);
+          subH = 18;
+        } else { g.select('.node-sub').text(''); }
+
+        // Dimensiones
+        const contentW = MAX_TEXT_W + PAD_X*2;
+        const blockH = Math.max(PAD_TOP + titleH + subH + PAD_BOTTOM, 54); // altura mínima para que no “desaparezcan” hojas
+
+        // Fondo y barra
+        const color = branchColor(d);
+        rect.attr('x', 0).attr('y', -blockH/2).attr('width', contentW).attr('height', blockH);
+        accent.attr('height', blockH).attr('fill', color);
+
+        // Posición textos
+        g.select('.node-title').attr('x', PAD_X).attr('y', -blockH/2 + PAD_TOP + 12);
+        if (meta){ g.select('.node-sub').attr('y', -blockH/2 + PAD_TOP + titleH + 12); }
+
+        // Toggle
+        const hasKids = !!(d.children || d._children);
+        if (hasKids){
+          const cx = contentW - 12, cy = 0;
+          const path = d.children
+            ? `M ${cx-6},${cy-3} L ${cx},${cy+3} L ${cx+6},${cy-3} Z`
+            : `M ${cx-6},${cy+3} L ${cx},${cy-3} L ${cx+6},${cy+3} Z`;
+          toggleIcon.attr('d', path);
+        } else {
+          toggleIcon.attr('d',''); // hoja: sin chevron
+        }
+
+        // Hitbox grande
+        hit.attr('x', -10).attr('y', -blockH/2 - 6).attr('width', contentW + 20).attr('height', blockH + 12);
+        rect.lower(); // el texto va encima
+
+        // Acrónimo SIEMPRE (derivado si falta)
+        const acr = getAcr(d);
+        badgeTx.text(acr);
+        const w = Math.max(28, badgeTx.node().getComputedTextLength() + 12);
+        const bx = contentW - w - 8;
+        const by = -blockH/2 + 8;
+        badgeBg.attr('x', bx).attr('y', by).attr('width', w).attr('height', BADGE_H);
+        badgeTx.attr('x', bx + 6).attr('y', by + BADGE_H - 5);
+      });
+
+      const merged = enter.merge(node);
+      merged.transition().duration(420)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .style('opacity', 1);
+
+      node.exit().transition().duration(250)
+        .attr('transform', _ => `translate(${source.y},${source.x})`)
+        .style('opacity', 0)
+        .remove();
+
+      // Recolorear barra tras cambios
+      merged.selectAll('.accent-bar').attr('fill', d => branchColor(d));
+
+      root.descendants().forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function expandAll(d=root){ d.children = d.children || d._children; d._children=null; if (d.children) d.children.forEach(expandAll); }
+    function collapseAll(d=root){
+      if (d.children){ d._children = d.children; d.children = null; }
+      if (d._children) d._children.forEach(collapseAll);
+    }
+
+    function fitToScreen(pad=40){
+      const bbox = gRoot.node().getBBox();
+      const w = host.clientWidth, h = host.clientHeight;
+      const scale = Math.min(
+        1.25,
+        Math.max(0.5, Math.min((w - pad*2)/bbox.width, (h - pad*2)/bbox.height))
+      );
+      const tx = (w - bbox.width * scale)/2 - bbox.x * scale;
+      const ty = (h - bbox.height* scale)/2 - bbox.y * scale;
+      svg.transition().duration(420).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }
+
+    // Render inicial
+    update(root);
+    setTimeout(()=> fitToScreen(60), 60);
+
+    // Controles
+    document.getElementById('btn-expand').onclick = ()=>{ expandAll(); update(root); setTimeout(()=>fitToScreen(60), 30); };
+    document.getElementById('btn-collapse').onclick = ()=>{ collapseAll(); root.children = root._children; root._children=null; update(root); setTimeout(()=>fitToScreen(60), 30); };
+    document.getElementById('btn-fit').onclick = ()=> fitToScreen(60);
+  })();
+  </script>
+</body>
+</html>
