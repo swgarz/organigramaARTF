@@ -2,79 +2,97 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Organigrama — Claro | hojas visibles + acrónimos para todos</title>
+  <title>Organigrama — ARTF | acrónimo + conteo interno · CGCVT nivel intermedio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     :root{
-      --bg: #f6f8fb;
-      --card: #ffffff;
-      --stroke: #e5e7eb;
-      --text: #0f172a;
-      --muted: #475569;
-      --pill: #eef2ff;
-      --shadow: 0 10px 28px rgba(15, 23, 42, .08);
-      --c1: #2563eb; --c2: #059669; --c3: #ea580c; --c4: #7c3aed; --c5: #0ea5e9;
-      --c6: #d946ef; --c7: #16a34a; --c8: #db2777; --c9: #f59e0b;
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --stroke:#e5e7eb;
+      --text:#0f172a;
+      --muted:#475569;
+      --shadow:0 10px 28px rgba(15,23,42,.08);
+      --match:#0ea5e9;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0; background:var(--bg); color:var(--text);
-      font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-    }
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
     header{
-      padding:12px 16px; position:sticky; top:0; z-index:5;
-      background:rgba(255,255,255,.92); backdrop-filter: blur(6px);
+      padding:12px 16px;position:sticky;top:0;z-index:5;
+      background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
       border-bottom:1px solid var(--stroke);
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
     }
-    h1{font-size:16px; margin:0; letter-spacing:.2px}
-    .toolbar{margin-left:auto; display:flex; gap:8px}
+    h1{font-size:16px;margin:0;letter-spacing:.2px}
+    .toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
     .btn{
-      padding:8px 12px; border:1px solid var(--stroke); border-radius:10px;
-      background:#fff; font-weight:600; cursor:pointer; transition:.15s ease;
-      box-shadow:0 1px 2px rgba(2,6,23,.04);
+      padding:8px 12px;border:1px solid var(--stroke);border-radius:10px;background:#fff;
+      font-weight:600;cursor:pointer;transition:.15s ease;box-shadow:0 1px 2px rgba(2,6,23,.04)
     }
     .btn:hover{transform:translateY(-1px)}
-    #chart{height:calc(100vh - 56px); width:100vw; overflow:hidden}
-    svg{width:100%; height:100%}
 
-    /* Enlaces con halo para no confundirse y SIN capturar clics */
-    .links, .links-halo{ pointer-events:none; }
-    .link-halo{ fill:none; stroke:#ffffff; stroke-width:8px; stroke-linecap:round; opacity:.95; }
-    .link{ fill:none; stroke-width:2px; stroke-linecap:round; opacity:.9; }
+    .search{
+      display:flex;gap:8px;align-items:center;background:#fff;padding:6px;
+      border:1px solid var(--stroke);border-radius:12px;box-shadow:0 1px 2px rgba(2,6,23,.04)
+    }
+    .search input{border:none;outline:none;font:600 14px ui-sans-serif,system-ui;min-width:220px}
 
-    /* Nodos (tarjetas) siempre por encima y clicables */
-    .node{ pointer-events:all; }
-    .node-card{ filter: drop-shadow(0 8px 18px rgba(2, 6, 23, .06)); }
-    .node-rect{ fill:var(--card); stroke:var(--stroke); stroke-width:1px; rx:12; ry:12; }
-    .accent-bar{ width:6px; rx:12; ry:12; opacity:.92 }
-    .node-title{ font-weight:750; font-size:14px; fill:#0f172a; }
-    .node-sub{ font-size:12px; fill:#64748b; }
-    .hit{ fill:transparent; cursor:pointer }
+    #chart{height:calc(100vh - 100px);width:100vw;overflow:hidden}
+    #results{padding:8px 16px;border-top:1px solid var(--stroke);background:#fff;display:flex;gap:8px;flex-wrap:wrap}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;
+      padding:6px 10px;border-radius:999px;cursor:pointer;box-shadow:0 1px 2px rgba(2,6,23,.04)
+    }
+    .chip b{font-weight:800;letter-spacing:.3px}
+    .chip:hover{filter:brightness(0.98)}
+    svg{width:100%;height:100%}
 
-    /* Acrónimo en pastilla (siempre visible, derivado si falta) */
-    .badge { pointer-events:none; }
-    .badge-bg{ fill:var(--pill); stroke:#dfe3ff; stroke-width:1px; rx:8; ry:8; }
-    .badge-text{ fill:#3730a3; font-weight:800; font-size:10.7px; letter-spacing:.35px; text-transform:uppercase; }
+    /* Enlaces con halo */
+    .links,.links-halo{pointer-events:none}
+    .link-halo{fill:none;stroke:#ffffff;stroke-width:10px;stroke-linecap:round;opacity:.96}
+    .link{fill:none;stroke-width:2.8px;stroke-linecap:round;opacity:.98}
 
-    .toggle{ fill:#94a3b8; opacity:.95; }
+    /* Nodos */
+    .node{pointer-events:all}
+    .node-card{filter:drop-shadow(0 8px 18px rgba(2,6,23,.06))}
+    .node-rect{fill:var(--card);stroke:var(--stroke);stroke-width:1px;rx:12;ry:12}
+    .node-title{font-weight:750;font-size:14px;fill:#0f172a}
+    .node-sub{font-size:12px;fill:#64748b}
+    .hit{fill:transparent;cursor:pointer}
+
+    /* Burbujas (badge de acrónimo) + conteo interno */
+    .badge{pointer-events:none}
+    .badge-text{font-weight:800;font-size:10.7px;letter-spacing:.35px;text-transform:uppercase}
+    .count-tx{font-weight:800;font-size:10px;dominant-baseline:middle;text-anchor:middle}
+
+    /* Resalte de búsqueda */
+    .is-match .node-rect{stroke:var(--match);stroke-width:2.5px;filter:drop-shadow(0 6px 14px rgba(14,165,233,.18))}
   </style>
 </head>
 <body>
   <header>
     <h1>Organigrama · ARTF</h1>
+
+    <div class="search">
+      <input id="q" list="acro-list" placeholder="Buscar por acrónimo… ej. DRTF" />
+      <datalist id="acro-list"></datalist>
+      <button class="btn" id="btn-search">Buscar</button>
+      <button class="btn" id="btn-clear">Limpiar</button>
+    </div>
+
     <div class="toolbar">
       <button class="btn" id="btn-expand">Expandir todo</button>
       <button class="btn" id="btn-collapse">Colapsar todo</button>
       <button class="btn" id="btn-fit">Ajustar a pantalla</button>
     </div>
   </header>
+
+  <div id="results" title="Resultados de búsqueda (clic para enfocar)"></div>
   <div id="chart"></div>
 
-  <!-- === TU JSON TAL CUAL === -->
   <script>
-  const data = {
+     const data = {
       "name": "Titular de la Agencia",
       "acrónimo": "",
       "atributos":"",
@@ -752,20 +770,31 @@
     };
   </script>
 
-  <!-- === RENDER === -->
   <script>
   (function () {
-    const host = document.getElementById('chart');
+    "use strict";
 
-    /* Layout más holgado (hojas no se “tapan”) */
-    const dx = 56;            // separación vertical mayor
-    const dy = 320;           // separación horizontal
-    const MAX_TEXT_W = 270;   // ancho de texto
+    if (typeof data === "undefined") {
+      console.error("Falta definir const data = {...}");
+      return;
+    }
+
+    const host = document.getElementById('chart');
+    const resultsEl = document.getElementById('results');
+    const inputEl = document.getElementById('q');
+    const listEl  = document.getElementById('acro-list');
+
+    /* Layout visual */
+    const dx = 56;            // vertical
+    const dy = 360;           // horizontal
+    const MAX_TEXT_W = 270;
     const PAD_X = 16, PAD_BOTTOM = 12;
     const BADGE_H = 18, BADGE_PAD = 8;
-    const PAD_TOP = BADGE_H + BADGE_PAD + 8; // espacio reservado al acrónimo
+    const PAD_TOP = BADGE_H + BADGE_PAD + 8;
+    const DEFAULT_W = MAX_TEXT_W + PAD_X*2;
 
-    const colors = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)','var(--c8)','var(--c9)'];
+    /* Desplazamiento horizontal global */
+    const H_OFFSET = -500;
 
     const svg  = d3.select(host).append('svg');
     const gRoot = svg.append('g');
@@ -783,24 +812,11 @@
     const root = d3.hierarchy(data);
     root.x0 = 0; root.y0 = 0;
 
-    // Colapsar todo menos el primer nivel
-    root.descendants().forEach(d=>{ d._children = d.children; });
+    /* Estado inicial: colapsado a “Direcciones” */
+    root.descendants().forEach(d => { d._children = d.children; d.children = null; });
     root.children = root._children; root._children = null;
-    if (root.children) root.children.forEach(c=>{ c.children = c._children; c._children = null; });
 
-    /* ===== Helpers ===== */
-    const STOP = new Set(['de','del','la','las','los','y','e','a','en','para','the','and','of','da','do','das','dos']);
-    function simplify(s){ return (s||'').normalize?.('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^A-Za-z0-9\s]/g,'') || (s||''); }
-    function deriveAcronym(name){
-      const t = simplify(name).trim().split(/\s+/).filter(w=> w && !STOP.has(w.toLowerCase()));
-      const ac = t.map(w=> w[0]).join('').toUpperCase();
-      return ac.slice(0, 8) || '—';
-    }
-    function getAcr(d){
-      const a = (d.data["acrónimo"] ?? d.data["acronimo"] ?? '').toString().trim();
-      return a || deriveAcronym(d.data.name || '');
-    }
-
+    /* Helpers */
     function wrap(sel, text, maxWidth, lineH){
       const words = (text||'').split(/\s+/).filter(Boolean);
       sel.text(null);
@@ -816,52 +832,157 @@
       return sel.selectAll('tspan').size();
     }
 
-    function toggle(d){ if(d.children){ d._children=d.children; d.children=null; } else { d.children=d._children; d._children=null; } }
-    const elbow = (s, t) => {
-      const mx = (s.y + t.y) / 2;
-      return `M ${s.y},${s.x} C ${mx},${s.x} ${mx},${t.x} ${t.y},${t.x}`;
+    /* Paleta amplia (para minimizar repeticiones) */
+    const PALETTE = [
+      "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b",
+      "#e377c2","#7f7f7f","#bcbd22","#17becf",
+      "#003f5c","#58508d","#bc5090","#ff6361","#ffa600",
+      "#2b908f","#90ee7e","#f45b5b","#91e8e1","#7cb5ec",
+      "#434348","#f7a35c","#8085e9","#f15c80","#e4d354",
+      "#2f4554","#61a0a8","#d48265","#91c7ae","#c23531",
+      "#6a2132","#0a9396"
+    ];
+
+    function hashStr(str){ let h = 0; for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0; return Math.abs(h); }
+    function nodeColor(node){
+      const key = (node.data["acrónimo"] ?? node.data["acronimo"] ?? node.data.name ?? '') + '|' + node.depth;
+      return PALETTE[ hashStr(key) % PALETTE.length ];
+    }
+
+    /* Utilidades de color para contraste y borde */
+    function hexToRgb(hex){
+      hex = hex.replace('#','');
+      if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+      const num = parseInt(hex,16);
+      return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+    }
+    function relLuminance({r,g,b}){
+      const srgb = [r,g,b].map(v => v/255).map(u => (u<=0.03928? u/12.92 : Math.pow((u+0.055)/1.055,2.4)));
+      return 0.2126*srgb[0] + 0.7152*srgb[1] + 0.0722*srgb[2];
+    }
+    function contrastText(hex){
+      const L = relLuminance(hexToRgb(hex));
+      return (L < 0.5) ? "#ffffff" : "#0f172a";
+    }
+    function shade(hex, pct){ // pct: -1..1
+      const {r,g,b} = hexToRgb(hex);
+      const t = pct < 0 ? 0 : 255;
+      const p = Math.abs(pct);
+      const R = Math.round((t - r)*p + r);
+      const G = Math.round((t - g)*p + g);
+      const B = Math.round((t - b)*p + b);
+      return "#" + [R,G,B].map(x=>x.toString(16).padStart(2,'0')).join('');
+    }
+
+    /* Enlaces desde borde de tarjetas */
+    const rightX = d => (d.y + ((d._box && d._box.w) || DEFAULT_W));
+    const leftX  = d => d.y;
+    const elbowNodes = (s, t) => {
+      const sx = rightX(s), sy = s.x;
+      const tx = leftX(t),  ty = t.x;
+      const mx = (sx + tx) / 2;
+      return `M ${sx},${sy} C ${mx},${sy} ${mx},${ty} ${tx},${ty}`;
     };
-    function branchColor(node){
-      let a = node;
-      while (a && a.depth > 1) a = a.parent;
-      if (!a || !root.children) return colors[0];
-      const idx = Math.max(0, root.children.indexOf(a)) % colors.length;
-      return colors[idx];
+
+    function toggle(d){
+      if(d.children){ d._children=d.children; d.children=null; }
+      else { d.children=d._children; d._children=null; }
+    }
+
+    /* CGCVT a nivel intermedio + alinear hijos si visibles */
+    function findCGCVT(){
+      return root.descendants().find(n=>{
+        const acr = (n.data["acrónimo"] ?? n.data["acronimo"] ?? '').toUpperCase();
+        return acr === 'CGCVT';
+      }) || null;
+    }
+    function adjustMidTier(){
+      const cg = findCGCVT();
+      if (!cg || !cg.parent) return;
+      const tier1Y = (cg.parent.y || 0) + dy;
+      const midY   = (cg.parent.y || 0) + dy/2;
+      cg.y = midY;
+      const kids = (cg.children || []);
+      for (const k of kids) k.y = tier1Y;
+    }
+
+    /* Acrónimo desde JSON */
+    function getAcr(d){
+      return (d?.data?.["acrónimo"] ?? d?.data?.["acronimo"] ?? "").toString().trim();
+    }
+
+    /* Pintar burbuja (badge) y conteo para que coincidan con el color de líneas del nodo */
+    function paintBadge(gCard, d){
+      const color = nodeColor(d);
+      const textColor = contrastText(color);
+      const border = shade(color, -0.25);
+
+      const badge = gCard.select('.badge');
+      const badgeBg = badge.select('.badge-bg');
+      const badgeTx = badge.select('.badge-text');
+      const countG  = badge.select('.count-pill');
+      const countBg = countG.select('rect');
+      const countTx = countG.select('text');
+
+      // Asegurar esquinas redondeadas por atributos (no CSS)
+      badgeBg.attr('rx',8).attr('ry',8);
+
+      // Colores
+      badgeBg.attr('fill', color).attr('stroke', border).attr('stroke-width', 1);
+      badgeTx.attr('fill', textColor);
+      countBg.attr('fill', color).attr('stroke', shade(color, 0.35)).attr('stroke-width', 1.2);
+      countTx.attr('fill', contrastText(color));
     }
 
     function update(source){
       tree(root);
+      adjustMidTier();
+
       const nodes = root.descendants();
       const links = root.links();
 
       /* LINKS (halo + línea) */
-      const linkHalo = gLinksHalo.selectAll('path').data(links, d=> d.target.id || (d.target.id = Math.random().toString(36).slice(2)));
+      const linkKey = d => d.target.id || (d.target.id = Math.random().toString(36).slice(2));
+
+      const linkHalo = gLinksHalo.selectAll('path').data(links, linkKey);
       linkHalo.enter().append('path')
         .attr('class','link-halo')
-        .attr('d', _ => elbow({y:source.y0, x:source.x0}, {y:source.y0, x:source.x0}))
+        .attr('d', _ => {
+          const s0 = {x:source.x0, y:source.y0, _box:source._box, data:source.data, depth:source.depth};
+          return elbowNodes(s0, s0);
+        })
         .merge(linkHalo)
         .transition().duration(420)
-        .attr('d', d => elbow(d.source, d.target));
+        .attr('d', d => elbowNodes(d.source, d.target));
       linkHalo.exit().transition().duration(250)
-        .attr('d', _ => elbow({y:source.y, x:source.x}, {y:source.y, x:source.x}))
+        .attr('d', _ => {
+          const s1 = {x:source.x, y:source.y, _box:source._box, data:source.data, depth:source.depth};
+          return elbowNodes(s1, s1);
+        })
         .remove();
 
-      const link = gLinks.selectAll('path').data(links, d=> d.target.id);
+      const link = gLinks.selectAll('path').data(links, linkKey);
       link.enter().append('path')
         .attr('class','link')
-        .attr('stroke', d => branchColor(d.source))
-        .attr('d', _ => elbow({y:source.y0, x:source.x0}, {y:source.y0, x:source.x0}))
+        .attr('stroke', d => nodeColor(d.source))
+        .attr('d', _ => {
+          const s0 = {x:source.x0, y:source.y0, _box:source._box, data:source.data, depth:source.depth};
+          return elbowNodes(s0, s0);
+        })
         .merge(link)
         .transition().duration(420)
-        .attr('stroke', d => branchColor(d.source))
-        .attr('d', d => elbow(d.source, d.target));
+        .attr('stroke', d => nodeColor(d.source))
+        .attr('d', d => elbowNodes(d.source, d.target));
       link.exit().transition().duration(250)
-        .attr('d', _ => elbow({y:source.y, x:source.x}, {y:source.y, x:source.x}))
+        .attr('d', _ => {
+          const s1 = {x:source.x, y:source.y, _box:source._box, data:source.data, depth:source.depth};
+          return elbowNodes(s1, s1);
+        })
         .remove();
 
       /* NODES */
-      const node = gNodes.selectAll('g.node').data(nodes, d=> d.id || (d.id = Math.random().toString(36).slice(2)));
-      const enter = node.enter().append('g')
+      const nodeSel = gNodes.selectAll('g.node').data(nodes, d=> d.id || (d.id = Math.random().toString(36).slice(2)));
+      const enter = nodeSel.enter().append('g')
         .attr('class','node')
         .attr('transform', _ => `translate(${source.y0},${source.x0})`)
         .style('opacity', 0)
@@ -869,16 +990,20 @@
 
       const card = enter.append('g').attr('class','node-card');
       const rect = card.append('rect').attr('class','node-rect');
-      const accent = card.append('rect').attr('class','accent-bar').attr('x', -6).attr('y', -6).attr('width', 6);
       const title = card.append('text').attr('class','node-title');
       const subtitle = card.append('text').attr('class','node-sub');
       const toggleIcon = card.append('path').attr('class','toggle');
       const hit = card.append('rect').attr('class','hit');
 
-      /* Acrónimo (siempre) */
+      /* Badge acrónimo */
       const badge = card.append('g').attr('class','badge');
       const badgeBg = badge.append('rect').attr('class','badge-bg');
       const badgeTx = badge.append('text').attr('class','badge-text');
+
+      /* Conteo (pill) dentro del badge */
+      const countG  = badge.append('g').attr('class','count-pill');
+      const countBg = countG.append('rect').attr('rx',7).attr('ry',7);
+      const countTx = countG.append('text').attr('class','count-tx');
 
       enter.each(function(d){
         const g = d3.select(this).select('.node-card');
@@ -890,21 +1015,17 @@
         // Subtítulo opcional
         const meta = (d.data.atributos||'').trim();
         let subH = 0;
-        if (meta){
-          g.select('.node-sub').text(meta).attr('x', PAD_X).attr('dy', 16);
-          subH = 18;
-        } else { g.select('.node-sub').text(''); }
+        if (meta){ g.select('.node-sub').text(meta).attr('x', PAD_X).attr('dy', 16); subH = 18; }
+        else { g.select('.node-sub').text(''); }
 
         // Dimensiones
         const contentW = MAX_TEXT_W + PAD_X*2;
-        const blockH = Math.max(PAD_TOP + titleH + subH + PAD_BOTTOM, 54); // altura mínima para que no “desaparezcan” hojas
+        const blockH = Math.max(PAD_TOP + titleH + subH + PAD_BOTTOM, 54);
 
-        // Fondo y barra
-        const color = branchColor(d);
+        // Fondo
         rect.attr('x', 0).attr('y', -blockH/2).attr('width', contentW).attr('height', blockH);
-        accent.attr('height', blockH).attr('fill', color);
 
-        // Posición textos
+        // Texto
         g.select('.node-title').attr('x', PAD_X).attr('y', -blockH/2 + PAD_TOP + 12);
         if (meta){ g.select('.node-sub').attr('y', -blockH/2 + PAD_TOP + titleH + 12); }
 
@@ -916,66 +1037,226 @@
             ? `M ${cx-6},${cy-3} L ${cx},${cy+3} L ${cx+6},${cy-3} Z`
             : `M ${cx-6},${cy+3} L ${cx},${cy-3} L ${cx+6},${cy+3} Z`;
           toggleIcon.attr('d', path);
-        } else {
-          toggleIcon.attr('d',''); // hoja: sin chevron
-        }
+        } else { toggleIcon.attr('d',''); }
 
-        // Hitbox grande
+        // Hitbox
         hit.attr('x', -10).attr('y', -blockH/2 - 6).attr('width', contentW + 20).attr('height', blockH + 12);
-        rect.lower(); // el texto va encima
+        rect.lower();
 
-        // Acrónimo SIEMPRE (derivado si falta)
+        // ===== Acrónimo desde JSON =====
         const acr = getAcr(d);
         badgeTx.text(acr);
-        const w = Math.max(28, badgeTx.node().getComputedTextLength() + 12);
-        const bx = contentW - w - 8;
+
+        // Medidas y pos del badge + conteo
+        const acrW = Math.max(12, badgeTx.node().getComputedTextLength());
+        const kidsCount = (d.children?.length ?? d._children?.length ?? 0);
+
+        // Pill de conteo (si aplica)
+        let pillW = 0, pillH = 16;
+        if (kidsCount > 0){
+          countTx.text(String(kidsCount));
+          const txtW = Math.max(7, countTx.node().getComputedTextLength());
+          pillW = Math.max(16, txtW + 10);
+        } else {
+          countG.style('display','none');
+        }
+
+        // Ancho final del badge
+        let wBadge = Math.max(28, acrW + 12) + (kidsCount>0 ? (pillW + 8) : 0);
+        const maxBadge = contentW - 8;
+        if (wBadge > maxBadge) wBadge = maxBadge;
+
+        const bx = contentW - wBadge - 8;
         const by = -blockH/2 + 8;
-        badgeBg.attr('x', bx).attr('y', by).attr('width', w).attr('height', BADGE_H);
+
+        badgeBg.attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
         badgeTx.attr('x', bx + 6).attr('y', by + BADGE_H - 5);
+
+        if (kidsCount > 0){
+          countG.style('display', null);
+          const cx = bx + wBadge - pillW - 6;
+          const cy = by + (BADGE_H - pillH)/2;
+          countG.attr('transform', `translate(${cx},${cy})`);
+          countBg.attr('x', 0).attr('y', 0).attr('width', pillW).attr('height', pillH);
+          countTx.attr('x', pillW/2).attr('y', pillH/2);
+        }
+
+        // Guardar tamaño para enlaces desde borde
+        d._box = { w: contentW, h: blockH };
+
+        // Colorear burbuja/píldora para este nodo (coincide con líneas)
+        paintBadge(g, d);
       });
 
-      const merged = enter.merge(node);
+      const merged = enter.merge(nodeSel);
       merged.transition().duration(420)
         .attr('transform', d => `translate(${d.y},${d.x})`)
         .style('opacity', 1);
 
-      node.exit().transition().duration(250)
+      nodeSel.exit().transition().duration(250)
         .attr('transform', _ => `translate(${source.y},${source.x})`)
         .style('opacity', 0)
         .remove();
 
-      // Recolorear barra tras cambios
-      merged.selectAll('.accent-bar').attr('fill', d => branchColor(d));
+      // Reposicionar y recolorear en cada actualización
+      merged.each(function(d){
+        const g = d3.select(this).select('.node-card');
+
+        // Reafirmar acrónimo
+        g.select('.badge-text').text(getAcr(d));
+
+        // Reposicionar badge + conteo
+        const kidsCount = (d.children?.length ?? d._children?.length ?? 0);
+        const contentW = (d._box?.w) || DEFAULT_W;
+        const blockH   = (d._box?.h) || 60;
+
+        const badgeTx = g.select('.badge-text');
+        const badgeBg = g.select('.badge-bg');
+        const countG  = g.select('.count-pill');
+        const countBg = countG.select('rect');
+        const countTx = countG.select('text');
+
+        const acrW = Math.max(12, badgeTx.node().getComputedTextLength());
+        let pillW = 0, pillH = 16;
+        if (kidsCount > 0){
+          countG.style('display', null);
+          countTx.text(String(kidsCount));
+          const txtW = Math.max(7, countTx.node().getComputedTextLength());
+          pillW = Math.max(16, txtW + 10);
+        } else {
+          countG.style('display', 'none');
+        }
+
+        let wBadge = Math.max(28, acrW + 12) + (kidsCount>0 ? (pillW + 8) : 0);
+        const maxBadge = contentW - 8;
+        if (wBadge > maxBadge) wBadge = maxBadge;
+
+        const bx = contentW - wBadge - 8;
+        const by = -blockH/2 + 8;
+
+        badgeBg.attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
+        badgeTx.attr('x', bx + 6).attr('y', by + BADGE_H - 5);
+
+        if (kidsCount > 0){
+          const cx = bx + wBadge - pillW - 6;
+          const cy = by + (BADGE_H - pillH)/2;
+          countG.attr('transform', `translate(${cx},${cy})`);
+          countBg.attr('width', pillW).attr('height', pillH);
+          countTx.attr('x', pillW/2).attr('y', pillH/2);
+        }
+
+        // Recolorear para mantener coincidencia con líneas
+        paintBadge(g, d);
+      });
 
       root.descendants().forEach(d => { d.x0 = d.x; d.y0 = d.y; });
     }
 
     function expandAll(d=root){ d.children = d.children || d._children; d._children=null; if (d.children) d.children.forEach(expandAll); }
-    function collapseAll(d=root){
-      if (d.children){ d._children = d.children; d.children = null; }
-      if (d._children) d._children.forEach(collapseAll);
-    }
+    function collapseAll(d=root){ if (d.children){ d._children = d.children; d.children = null; } if (d._children) d._children.forEach(collapseAll); }
+    function expandPathTo(node){ let p = node.parent; while (p){ if (!p.children){ p.children = p._children; p._children = null; } p = p.parent; } }
 
     function fitToScreen(pad=40){
       const bbox = gRoot.node().getBBox();
       const w = host.clientWidth, h = host.clientHeight;
-      const scale = Math.min(
-        1.25,
-        Math.max(0.5, Math.min((w - pad*2)/bbox.width, (h - pad*2)/bbox.height))
-      );
-      const tx = (w - bbox.width * scale)/2 - bbox.x * scale;
+      const scale = Math.min(0.75, Math.max(0.5, Math.min((w - pad*2)/bbox.width, (h - pad*2)/bbox.height)));
+      const tx = (w - bbox.width * scale)/2 - bbox.x * scale + H_OFFSET;
       const ty = (h - bbox.height* scale)/2 - bbox.y * scale;
       svg.transition().duration(420).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
     }
+    function focusOn(d, scale=1.15){
+      const w = host.clientWidth, h = host.clientHeight;
+      const box = d._box || {w: DEFAULT_W, h: 60};
+      const tx = w/2 - (d.y + box.w/2) * scale;
+      const ty = h/2 - (d.x) * scale;
+      svg.transition().duration(450).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }
 
-    // Render inicial
+    // Render inicial + auto-fit
     update(root);
-    setTimeout(()=> fitToScreen(60), 60);
+    function autoFit(){
+      let tries = 0, maxTries = 24;
+      const tick = () => {
+        const b = gRoot.node()?.getBBox?.();
+        if (b && b.width > 0 && b.height > 0) {
+          fitToScreen(60);
+        } else if (tries++ < maxTries) {
+          requestAnimationFrame(tick);
+        } else {
+          setTimeout(() => fitToScreen(60), 220);
+        }
+      };
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(() => requestAnimationFrame(tick));
+      } else {
+        requestAnimationFrame(tick);
+      }
+    }
+    window.addEventListener('load', autoFit, { once: true });
+    window.addEventListener('pageshow', () => autoFit());
 
     // Controles
     document.getElementById('btn-expand').onclick = ()=>{ expandAll(); update(root); setTimeout(()=>fitToScreen(60), 30); };
     document.getElementById('btn-collapse').onclick = ()=>{ collapseAll(); root.children = root._children; root._children=null; update(root); setTimeout(()=>fitToScreen(60), 30); };
     document.getElementById('btn-fit').onclick = ()=> fitToScreen(60);
+
+    /* Buscador por ACRÓNIMO */
+    const allNodes = root.descendants();
+    const indexAcr = new Map();
+    const acroSet = new Set();
+    for (const n of allNodes){
+      const acr = getAcr(n).toUpperCase();
+      acroSet.add(acr);
+      if (!indexAcr.has(acr)) indexAcr.set(acr, []);
+      indexAcr.get(acr).push(n);
+    }
+    listEl.innerHTML = '';
+    Array.from(acroSet).sort().forEach(acr=>{
+      const opt = document.createElement('option');
+      opt.value = acr;
+      listEl.appendChild(opt);
+    });
+
+    function clearMatches(){
+      gNodes.selectAll('g.node').classed('is-match', false);
+      resultsEl.innerHTML = '';
+    }
+    function showResults(q){
+      clearMatches();
+      const query = (q || inputEl.value || '').trim().toUpperCase();
+      if (!query){ return; }
+
+      let matches = indexAcr.get(query) || [];
+      if (matches.length === 0){
+        const keys = Array.from(indexAcr.keys()).filter(k => k.includes(query));
+        keys.forEach(k => matches = matches.concat(indexAcr.get(k)));
+      }
+      if (matches.length === 0){
+        resultsEl.innerHTML = `<span class="chip">Sin resultados para <b>${query}</b></span>`;
+        return;
+      }
+
+      matches.forEach(n => expandPathTo(n));
+      update(root);
+
+      const ids = new Set(matches.map(n => n.id));
+      gNodes.selectAll('g.node').classed('is-match', d => ids.has(d.id));
+
+      resultsEl.innerHTML = '';
+      matches.forEach((n, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        const acr = getAcr(n);
+        chip.innerHTML = `<b>${acr}</b> · ${n.data.name}`;
+        chip.onclick = () => { focusOn(n, 1.2); };
+        resultsEl.appendChild(chip);
+        if (i === 0) setTimeout(()=> focusOn(n, 1.2), 80);
+      });
+    }
+
+    document.getElementById('btn-search').onclick = ()=> showResults();
+    inputEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') showResults(); });
+    document.getElementById('btn-clear').onclick = ()=>{ inputEl.value = ''; clearMatches(); fitToScreen(60); };
   })();
   </script>
 </body>
