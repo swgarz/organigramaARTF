@@ -44,7 +44,11 @@
 
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-    header{padding:12px 16px;position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--stroke);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    header{
+      padding:12px 16px;position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);
+      backdrop-filter:blur(6px);border-bottom:1px solid var(--stroke);display:flex;gap:10px;
+      align-items:center;flex-wrap:wrap
+    }
     [data-theme="dark"] header{ background:rgba(15,23,42,.85); }
     h1{font-size:16px;margin:0}
     .toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -53,7 +57,19 @@
     .search{display:flex;gap:8px;align-items:center;background:#fff;padding:6px;border:1px solid var(--stroke);border-radius:12px}
     [data-theme="dark"] .search{ background:#0b1220; }
     .search input{border:none;outline:none;font:600 14px ui-sans-serif,system-ui;min-width:220px;background:transparent;color:var(--text)}
-    #chart{height:calc(100vh - 100px);width:100vw;overflow:hidden;position:relative}
+
+    /* Nota debajo de los botones derechos */
+    .note{
+      flex-basis:100%;
+      text-align:right;
+      font-weight:600;
+      font-size:12.5px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    [data-institutional="on"] .note{ color:#fff; opacity:.9; }
+
+    #chart{height:calc(100vh - 120px);width:100vw;overflow:hidden;position:relative}
     #results{padding:8px 16px;border-top:1px solid var(--stroke);background:#fff;display:flex;gap:8px;flex-wrap:wrap}
     [data-theme="dark"] #results{ background:#0b1220; }
     .chip{display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;padding:6px 10px;border-radius:999px;cursor:pointer}
@@ -85,12 +101,14 @@
 <body>
   <header>
     <h1>Organigrama · ARTF</h1>
+
     <div class="search">
-      <input id="q" list="acro-list" placeholder="Buscar por acrónimo o nombre… ej. DRTF / “Dirección de Regulación”" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      <input id="q" list="acro-list" placeholder="Buscar por acrónimo o nombre… ej. DRTF / Direcci\u00f3n de Regulaci\u00f3n" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
       <datalist id="acro-list"></datalist>
       <button class="btn" id="btn-search">Buscar</button>
       <button class="btn" id="btn-clear">Limpiar</button>
     </div>
+
     <div class="toolbar">
       <button class="btn" id="btn-inst" title="Aplicar colores institucionales">Modo institucional</button>
       <button class="btn" id="btn-theme" title="Alternar claro/oscuro">Modo oscuro</button>
@@ -98,24 +116,26 @@
       <button class="btn" id="btn-collapse">Colapsar todo</button>
       <button class="btn" id="btn-fit">Ajustar</button>
     </div>
+
+    <div class="note">Dirección de Procesos Administrativos de Obras | Subdirección de Implementación de Manuales y Procedimientos de Obra</div>
   </header>
 
   <div id="results" title="Resultados de búsqueda (clic para enfocar)"></div>
-  <div id="chart"><div id="no-data" style="display:none">Pega tu <code>window.data = {…}</code> antes de este script.</div></div>
+  <div id="chart"><div id="no-data" style="display:none">Pega tu data</div></div>
 
   <!-- JSON embebido (TU DATA) -->
   <script>
-    window.data = {
+    const data = {
       "name": "Titular de la Agencia",
       "acrónimo": "Titular",
-      "atributos":"",
+      "atributos": "",
       "children": [
         {
           "name": "Dirección General de Economía, Información y Regulación Ferroviaria ",
           "acrónimo": "DGEIRF",
           "children": [
             { "name": "Enlace Administrativo de la Dirección General de Economía, Información, y Regulación Ferroviaria", "acrónimo": "DRE"},
-            { 
+            {
               "name": "Dirección de Regulación Económica", "acrónimo": "DRE",
               "children": [
                 {
@@ -132,7 +152,7 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección de Evaluación Económica y Financiera", "acrónimo": "DEEF",
               "children": [
                 {"name": "Subdirección de Evaluación Económica", "acrónimo": "SEE"},
@@ -144,7 +164,7 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección de Regulación Técnica Ferroviaria ", "acrónimo": "DRTF",
               "children": [
                 {
@@ -161,7 +181,7 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección de Información y Estadística Ferroviaria ", "acrónimo": "DIEF",
               "children": [
                 {
@@ -183,7 +203,7 @@
             { "name": "Subdirección de Coordinación con Centros SICT", "acrónimo": "SCCSICT" },
             { "name": "Subdirección de Análisis de la Operación y Seguridad", "acrónimo": "SAOS"},
             { "name": "Enlace de Operación y Seguridad", "acrónimo": "EADGV" },
-            { 
+            {
               "name": "Dirección de Verificación y Supervisión Ferroviaria \"A\"", "acrónimo": "DVSF\"A\"",
               "children": [
                 {"name": "Enlace de Verificación y Supervisión Ferroviaria \"A\"", "acrónimo": "EVSF"},
@@ -192,40 +212,40 @@
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"C\"", "acrónimo": "SVSFC"}
               ]
             },
-            { 
+            {
               "name": "Dirección de Verificación y Supervisión Ferroviaria \"B\"", "acrónimo": "DVSF\"B\"",
               "children": [
                 {"name": "Enlace de Verificación y Supervisión Ferroviaria \"B\"", "acrónimo": "EVSF"},
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"D\"", "acrónimo": "SVSFD"},
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"E\"", "acrónimo": "SVSFE"},
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"F\"", "acrónimo": "SVSFF"}
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Verificación y Supervisión Ferroviaria C", "acrónimo": "DVSF\"C\"",
               "children": [
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"G\"", "acrónimo": "SVSFG"},
                 {"name": "Subdirección de Verificación y Supervisión Ferroviaria \"H\"", "acrónimo": "SVSFH"}
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Registro Ferroviario Mexicano", "acrónimo": "DRFM",
               "children": [
                 {"name": "Subdirección de Registro Ferroviario Mexicano", "acrónimo": "SRFM"}
-              ]  
+              ]
             },
-            { 
+            {
               "name": "Dirección de Seguridad Ferroviaria", "acrónimo": "DSF",
               "children": [
                 {"name": "Subdirección de Seguimiento de Siniestros Ferroviarios", "acrónimo": "SSSF"},
                 {"name": "Subdirección de Programas de Seguridad Ferroviaria", "acrónimo": "SPSF"}
-              ] 
+              ]
             }
           ]
         },
         { "name": "Dirección General de Planeación y Proyectos de Transporte Público ", "acrónimo": "DGPPTP",
           "children": [
-            { 
+            {
               "name": "Dirección de Estudios de Transporte", "acrónimo": "DET",
               "children": [
                 {
@@ -240,27 +260,27 @@
                     {"name": "Jefatura de Departamento de Análisis", "acrónimo": "JDA"}
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Proyectos de Transporte", "acrónimo": "DPT",
               "children": [
-                { 
+                {
                   "name": "Subdirección de Seguimiento de Proyectos de Transporte", "acrónimo":"SSPT",
                   "children" : [
                     {"name": "Jefatura de Departamento de Diseño y Señalamiento Vial", "acrónimo": "JDDSV"},
                     {"name": "Jefatura de Departamento de Proyectos de Transporte", "acrónimo": "JDPT"}
                   ]
                 },
-                { 
+                {
                   "name": "Subdirección de Regulación y Normatividad", "acrónimo": "SRN",
                   "children": [
                     {"name": "Jefatura de Departamento de Consulta", "acrónimo": "JDC"}
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Integración de Transporte", "acrónimo": "DIT",
               "children": [
                 {
@@ -270,7 +290,7 @@
                     {"name": "Jefatura de Departamento de Accesibilidad", "acrónimo": "JDA"}
                   ]
                 }
-              ] 
+              ]
             },
             { "name": "Enlace de Planeación de Transporte", "acrónimo": "EPT" }
           ]
@@ -279,7 +299,7 @@
           "children": [
             { "name": "Enlace Administrativo de la Dirección General de Proyectos Ferroviarios", "acrónimo": "EADGPF" },
             { "name": "Enlace Técnico Administrativo", "acrónimo": "ETA" },
-            { 
+            {
               "name": "Dirección de Proyectos Ferroviarios de Pasajeros", "acrónimo": "DPFP",
               "children": [
                 {
@@ -296,9 +316,9 @@
                     {"name": "Jefatura de Departamento de Análisis Operacional de Proyectos Ferroviarios", "acrónimo": "JDAOPF"}
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Proyectos Ferroviarios de Carga y Desarrollo Multimodal", "acrónimo": "DPFCDM",
               "children": [
                 { "name": "Subdirección de Coordinación y Seguimiento de Proyectos Ferroviarios de Carga", "acrónimo": "SCSPFC" },
@@ -307,16 +327,16 @@
                   "children": [
                     {"name": "Jefatura de Departamento de Desarollo Multimodal", "acrónimo": "JDDM"},
                     {"name": "Jefatura de Departamento de Servicios Auxiliares Ferroviarios", "acrónimo": "JDSAF"}
-                  ] 
+                  ]
                 }
-              ] 
+              ]
             }
           ]
         },
         { "name": "Dirección General de Asuntos Jurídicos", "acrónimo": "DGAJ",
           "children": [
             { "name": "Jefatura de Departamento de Transparencia a Acceso a la información", "acrónimo": "JDTAI" },
-            { 
+            {
               "name": "Dirección de lo Consultivo", "acrónimo": "DCONS",
               "children": [
                 {
@@ -338,9 +358,9 @@
                     {"name": "Jefatura de Departamento de Análisis Jurídico de Concesiones, Asignaciones y Permisos", "acrónimo": "JDAJCAP"}
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de lo Contencioso", "acrónimo": "DCONT",
               "children": [
                 {
@@ -356,9 +376,9 @@
                     {"name": "Jefatura de Departamento de Juicios de Nulidad y Amparo", "acrónimo": "JDJNA"}
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección Jurídica de Coordinación de Liberación de Derecho de Vía", "acrónimo": "DJCLDV",
               "children": [
                 {
@@ -380,7 +400,7 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección Jurídica de Obras", "acrónimo": "DJO",
               "children": [
                 {
@@ -397,14 +417,14 @@
                     {"name": "Jefatura de Departamento de Seguimiento en Materia de Obras a Órganos Fiscalizadores", "acrónimo": "JDSMOOF"}
                   ]
                 }
-              ] 
+              ]
             }
           ]
         },
         { "name": "Dirección General de Administración y Finanzas ", "acrónimo": "DGAF",
           "children": [
             { "name": "Enlace Administrativo de la Dirección General de Administración y Finanzas ", "acrónimo": "EADGAF" },
-            { 
+            {
               "name": "Dirección de Recursos Materiales y Servicios Generales", "acrónimo": "DRMSG",
               "children": [
                 {
@@ -438,24 +458,24 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección de Recursos Financieros", "acrónimo": "DRF",
               "children": [
-                { 
+                {
                   "name": "Subdirección de Presupuesto", "acrónimo": "SPR",
                   "children": [
                     {"name": "Enlace al Presupuesto", "acrónimo": "EP"}
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Subdirección de Contabilidad y Pagos", "acrónimo": "DTIP",
                   "children": [
                     {"name": "Enlace de Contabilidad y Pagos", "acrónimo": "EP"}
-                  ] 
+                  ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Recursos Humanos", "acrónimo": "DRR.HH.",
               "children": [
                 {
@@ -463,11 +483,11 @@
                   "children": [
                     {"name": "Enlace de Recursos Humanos", "acrónimo": "ERH"},
                     {"name": "Enlace de Relaciones Laborales", "acrónimo": "ERL"}
-                  ] 
+                  ]
                 }
-              ]  
+              ]
             },
-            { 
+            {
               "name": "Dirección de Tecnologías de La Información y de Proyectos", "acrónimo": "DTIP",
               "children": [
                 {
@@ -484,9 +504,9 @@
                     }
                   ]
                 }
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección Financiera de Obras", "acrónimo": "DFO",
               "children": [
                 {
@@ -503,27 +523,27 @@
                     {"name": "Jefatura de Departamento de Recursos Financieros de Obras", "acrónimo": "JDRFO"}
                   ]
                 }
-              ] 
+              ]
             }
           ]
         },
         { "name": "Dirección General de Seguimiento a Proyectos y Asuntos Estratégicos ", "acrónimo": "DGSPAE",
           "children": [
-            { 
+            {
               "name": "Coordinación de Relaciones Institucionales con Asignatarios y Concesionarios", "acrónimo": "CRIAC",
               "children": [
                 {"name": "Subdirección de Vinculación con Asignatarios y Concesionarios", "acrónimo": "JDRFO"}
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Programación de Proyectos Estratégicos", "acrónimo": "DPPE",
               "children": [
                 {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"A\" ", "acrónimo": "SPSPEA"},
                 {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"B\" ", "acrónimo": "SPSPEB"},
                 {"name": "Subdirección de Programación y Seguimiento de Proyectos Estratégicos \"C\" ", "acrónimo": "SPSPEC"}
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Dirección de Coordinación Técnica y Seguimiento de Proyectos", "acrónimo": "DCTSP",
               "children": [
                 {"name": "Jefatura de Análisis Técnico de Proyectos", "acrónimo": "JATP"},
@@ -537,19 +557,20 @@
                     {"name": "Jefatura de Departamento de Seguimiento de Proyectos \"B\"", "acrónimo": "JDSPB"}
                   ]
                 }
-              ] 
+              ]
             }
           ]
         },
-        { "name": "Secretario Particular", "acrónimo": "SP",
+        {
+          "name": "Secretario Particular", "acrónimo": "SP",
           "children": [
-            { 
+            {
               "name": "Subdirección de Control Institucional", "acrónimo": "SCI",
               "children": [
                 {"name": "Enlace Logístico", "acrónimo":"EL"}
-              ] 
+              ]
             },
-            { 
+            {
               "name": "Subdirección de Control de Gestión", "acrónimo": "SCG",
               "children": [
                 {"name": "Jefatura de Departamento de Atención Ciudadana", "acrónimo":"JDAC"},
@@ -558,55 +579,55 @@
             }
           ]
         },
-        { 
+        {
           "name": "Coordinación General de Construcción de Vías y Trenes", "acrónimo": "CGCVT",
           "children": [
-            { 
+            {
               "name": "Dirección General Técnica", "acrónimo": "DGT",
               "children": [
-                { 
+                {
                   "name": "Subdirección de Control Documental Técnica", "acrónimo": "SCDT",
                   "children": [
                     {"name": "Enlace de Control Documental", "acrónimo": "ECD"}
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Planeación y Programación de Obras", "acrónimo": "DPPO",
                   "children": [
                     { "name": "Subdirección de Planeación y Programación de Obras", "acrónimo": "SPPO" },
                     { "name": "Jefatura de Departamento de Programación", "acrónimo": "JDP" }
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Diseño y Proyecto", "acrónimo": "DDP",
                   "children": [
-                    { 
+                    {
                       "name": "Subdirección de Diseño de Ingeniería y Proyecto", "acrónimo": "SDIP",
                       "children": [
                         {"name": "Jefatura de Departamento de Ingeniería y Proyecto", "acrónimo": "SJDIP"}
-                      ] 
+                      ]
                     },
-                    { 
+                    {
                       "name": "Subdirección de Ingeniería Ferroviaria", "acrónimo": "SINF",
                       "children": [
                         {"name": "Jefatura de Departamento de Ingeniería Ferroviaría", "acrónimo": "JDIF"}
-                      ] 
+                      ]
                     }
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Material Rodante y Sistemas Ferroviarios", "acrónimo": "DMRSF",
                   "children": [
                     {"name": "Subdirección de Material Rodante", "acrónimo": "JDIF"},
                     {"name": "Subdirección de Sistemas Ferroviarios y Mantenimiento", "acrónimo": "JDIF"}
-                  ] 
+                  ]
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección General de Obras", "acrónimo": "DGO",
               "children": [
-                { 
+                {
                   "name": "Subdirección de Control Documental de Obras", "acrónimo": "SCDO",
                   "children": [
                     {"name": "Jefatura de Departamento de Control Documental de Obras \"A\"", "acrónimo": "JDCDOA"},
@@ -618,7 +639,7 @@
                     }
                   ]
                 },
-                { 
+                {
                   "name": "Dirección de Ingeniería de Concursos y Costos de Obras", "acrónimo": "DICCO",
                   "children": [
                     {
@@ -647,9 +668,9 @@
                         {"name": "Jefatura de Departamento de Afectaciones", "acrónimo": "JDA"}
                       ]
                     }
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Construcción de Obras A", "acrónimo": "DCO\"A\"",
                   "children": [
                     {
@@ -670,7 +691,7 @@
                     }
                   ]
                 },
-                { 
+                {
                   "name": "Dirección de Construcción de Obras B", "acrónimo": "DCO\"B\"",
                   "children": [
                     {
@@ -689,9 +710,9 @@
                         {"name": "Jefatura de Departamento de Obra \"B2-C\"", "acrónimo": "JDOB2C"}
                       ]
                     }
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Construcción de Obras C", "acrónimo": "DCO\"C\"",
                   "children": [
                     {
@@ -710,9 +731,9 @@
                         {"name": "Jefatura de Departamento de Obra \"C2-C\"", "acrónimo": "JDOC2C"}
                       ]
                     }
-                  ]  
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Construcción de Obras D", "acrónimo": "DCO\"D\"",
                   "children": [
                     {
@@ -729,9 +750,9 @@
                         {"name": "Jefatura de Departamento de Obra \"D2-B\"", "acrónimo": "JDOD2B"}
                       ]
                     }
-                  ]  
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Edificación", "acrónimo": "DE",
                   "children": [
                     {
@@ -745,10 +766,10 @@
                 }
               ]
             },
-            { 
+            {
               "name": "Dirección General Control y Gestión Interna de Obras", "acrónimo": "DGCGIO",
               "children": [
-                { 
+                {
                   "name": "Dirección de Procesos Administrativos de Obras", "acrónimo": "DPAO",
                   "children": [
                     {
@@ -758,9 +779,9 @@
                         {"name": "Jefatura de Departamento de Implementación de Manuales y Procedimientos de Obra \"B\"", "acrónimo": "JDIMPOB"}
                       ]
                     }
-                  ] 
+                  ]
                 },
-                { 
+                {
                   "name": "Dirección de Gestión de Sistemas de Archivos de Obras", "acrónimo": "DGSAO",
                   "children": [
                     {
@@ -780,24 +801,22 @@
     };
   </script>
 
-  <!-- LÓGICA D3 + UI (separación extra bajo DGT + modo institucional) -->
+  <!-- LÓGICA D3 + UI (hijos CGCVT juntos; separo solo NIETOS) -->
   <script>
   (function () {
     "use strict";
 
-    const ORG_X_OFFSET = -450;      // offset horizontal global
-    const EXTRA_DGT_GAP = 1 * 76;   // empuje hacia abajo cuando DGT está abierto (ajusta si quieres)
+    const ORG_X_OFFSET = -450;    // offset horizontal global
+    const dx = 66, dy = 360;
+    const MAX_TEXT_W = 270, PAD_X = 16, PAD_BOTTOM = 12, BADGE_H = 18, BADGE_PAD = 8,
+          PAD_TOP = BADGE_H + BADGE_PAD + 8, DEFAULT_W = MAX_TEXT_W + PAD_X*2, DEFAULT_H = 60;
 
-    let dataRef = (typeof window !== 'undefined' && window.data) ? window.data : null;
-    const noDataEl = document.getElementById('no-data');
-    if (!dataRef){ noDataEl.style.display = 'flex'; return; } else { noDataEl.style.display = 'none'; }
+    const dataRef = data; // sin window
 
     const host = document.getElementById('chart');
     const resultsEl = document.getElementById('results');
     const inputEl = document.getElementById('q');
     const listEl  = document.getElementById('acro-list');
-
-    const dx = 66, dy = 360, MAX_TEXT_W = 270, PAD_X = 16, PAD_BOTTOM = 12, BADGE_H = 18, BADGE_PAD = 8, PAD_TOP = BADGE_H + BADGE_PAD + 8, DEFAULT_W = MAX_TEXT_W + PAD_X*2, DEFAULT_H = 60;
 
     const svg  = d3.select(host).append('svg');
     const gRoot = svg.append('g');
@@ -885,24 +904,31 @@
       return null;
     }
 
+    /* === Helpers de desplazamiento vertical (eje X) === */
     function shiftSubtreeY(node, delta){ if (!delta || !node) return; node.descendants().forEach(n => { n.x += delta; }); }
+    function shiftDescendantsY(node, delta){
+      if (!delta || !node) return;
+      (function walk(n){
+        if (!n.children) return;
+        n.children.forEach(c => { c.x += delta; walk(c); });
+      })(node);
+    }
+
     function subtreeExtentX(node){
       let min = +Infinity, max = -Infinity;
       (function walk(n){ min=Math.min(min,n.x); max=Math.max(max,n.x); if(n.children) n.children.forEach(walk); })(node);
       return {min, max};
     }
-    function descendantsExtentX(node){
-      if (!node.children || node.children.length === 0) return {min:+Infinity, max:-Infinity};
+    function descendantsExtentX_exclSelf(node){
       let min = +Infinity, max = -Infinity;
       (function walk(n){
-        if (n.children) n.children.forEach(c => { min=Math.min(min,c.x); max=Math.max(max,c.x); walk(c); });
+        if (!n.children) return;
+        n.children.forEach(c => { min=Math.min(min,c.x); max=Math.max(max,c.x); walk(c); });
       })(node);
       return {min, max};
     }
-    function shiftDescendantsY(node, delta){
-      if (!delta || !node || !node.children) return;
-      (function walk(n){ if (n.children) n.children.forEach(c => { c.x += delta; walk(c); }); })(node);
-    }
+
+    /* Alineación general de CGCVT a media altura y una columna al frente */
     function adjustMidTier(){
       const cg = findByAcr('CGCVT'); if (!cg || !cg.parent) return;
       const tier1Y = (cg.parent.y || 0) + dy;
@@ -919,22 +945,42 @@
       if (!cg || !sp) return;
       if (!(cg.children && cg.children.length)) return;
       const spExt = subtreeExtentX(sp);
-      const kidsExt = descendantsExtentX(cg);
+      const kidsExt = descendantsExtentX_exclSelf(cg);
       if (!isFinite(kidsExt.min)) return;
       const margin = dx;
       const minPermitido = spExt.max + margin;
       if (kidsExt.min < minPermitido){
         const delta = minPermitido - kidsExt.min;
-        shiftDescendantsY(cg, delta);
+        shiftDescendantsY(cg, delta); // mueve SOLO descendientes (los 3 hijos permanecen juntos)
       }
     }
 
-    /* Empuja DGT hacia abajo cuando está desplegado */
-    function addExtraGapUnderDGT(){
-      const dgt = findByAcr('DGT');
-      if (!dgt) return;
-      if (dgt.children && dgt.children.length){ // solo si está abierto
-        shiftSubtreeY(dgt, EXTRA_DGT_GAP);
+    /* ====== CLAVE: Mantener juntos los 3 hijos de CGCVT
+       y separar SOLO sus NIETOS para evitar encime ====== */
+    function separateCGCVTGrandchildren(gap = dx * 2.2){
+      const cg = findByAcr('CGCVT'); if (!cg) return;
+      const kids = (cg.children || cg._children || []);
+      if (!kids.length) return;
+
+      // Calculamos extents SOLO de descendientes (excluyendo al propio hijo)
+      const items = kids.map(k => {
+        const ext = descendantsExtentX_exclSelf(k);
+        // si no tiene descendientes abiertos, usamos su propia x para ordenar
+        if (!isFinite(ext.min) || !isFinite(ext.max)) { ext.min = k.x; ext.max = k.x; }
+        return { node:k, ext };
+      }).sort((a,b) => a.ext.min - b.ext.min);
+
+      // Enforce: no-overlap entre descendientes, sin mover la tarjeta del hijo
+      for (let i=1; i<items.length; i++){
+        const prev = items[i-1];
+        const cur  = items[i];
+        const needMin = prev.ext.max + gap;
+        if (cur.ext.min < needMin){
+          const delta = needMin - cur.ext.min;
+          shiftDescendantsY(cur.node, delta); // mueve NIETOS, no el hijo
+          cur.ext.min += delta;
+          cur.ext.max += delta;
+        }
       }
     }
 
@@ -949,14 +995,14 @@
 
     function update(source){
       d3.tree().nodeSize([dx, dy]).separation((a,b)=> (a.parent===b.parent ? 1.2 : 1.6))(root);
+
       adjustMidTier();
       applyOneSlotDownForCGCVT();
-      clampCGCVTChildrenBelowSP();
 
-      /* Separación extra para DGT */
-      addExtraGapUnderDGT();
-
+      // Mantener juntos los 3 hijos; solo muevo NIETOS
       promoteChildrenOneColumnUnder(['DGT','DGO','DGCGIO']);
+      separateCGCVTGrandchildren(dx * 2.2);
+      clampCGCVTChildrenBelowSP();
 
       const nodes = root.descendants();
       const links = root.links();
@@ -994,7 +1040,7 @@
         const lines = wrap(g.select('.node-title'), (d.data.name||''), MAX_TEXT_W, 16);
         const titleH = lines * 16;
 
-        const meta = (d.data.atributos||'').trim(); // <-- FIX: comillas correctas
+        const meta = (d.data.atributos||'').trim();
         let subH = 0;
         if (meta){ g.select('.node-sub').text(meta).attr('x', 16).attr('dy', 16); subH = 18; }
         else { g.select('.node-sub').text(''); }
