@@ -864,10 +864,31 @@
       css('--ana3','#BE7288'),
       css('--ana4','#B3DBE8')
     ];
+
+    /* ==== ÚNICO CAMBIO: paleta por cada hijo directo del TITULAR ==== */
+    const TOP_CHILD_PALETTE = [
+      '#16a34a', // verde
+      '#8b5cf6', // morado
+      '#ec4899', // magenta
+      '#f59e0b', // ámbar
+      '#f97316', // naranja
+      '#ef4444', // rojo
+      '#64748b', // slate
+      '#14b8a6', // teal
+      '#3b82f6'  // azul
+    ];
     function nodeColor(d){
+      // Si es hijo directo del root (Titular), darle un color único de TOP_CHILD_PALETTE
+      if (d.depth === 1 && d.parent){
+        const siblings = (d.parent.children || d.parent._children || []);
+        const idx = Math.max(0, siblings.indexOf(d));
+        return TOP_CHILD_PALETTE[idx % TOP_CHILD_PALETTE.length];
+      }
+      // Para el resto, mantener la paleta por profundidad que ya tenías
       const idx = Math.max(0, d.depth) % PALETTE_BY_DEPTH.length;
       return PALETTE_BY_DEPTH[idx];
     }
+    /* ===== fin del ÚNICO CAMBIO ===== */
 
     const getAcr = d => (d?.data?.["acrónimo"] ?? d?.data?.["acronimo"] ?? "").toString().trim();
 
@@ -1081,7 +1102,7 @@
           g.select('.toggle').attr('d','');
         }
 
-        // Píldora de conteo: visible solo si kids>0, mostrando el número EXACTO
+        // Píldora de conteo
         let pillW = 0, pillH = 16;
         if (kids > 0){
           g.select('.count-pill').style('display', null);
@@ -1115,7 +1136,7 @@
         d._box = { w: contentW, h: blockH };
       }
 
-      // ENTER: dibuja y refresca tarjeta
+      // ENTER
       enter.each(function(d){
         const g = d3.select(this).select('.node-card');
         refreshCard(g, d);
@@ -1123,7 +1144,7 @@
 
       const merged = enter.merge(nodeSel);
 
-      // UPDATE: SIEMPRE refrescar tarjeta para mantener conteos correctos
+      // UPDATE
       merged.each(function(d){
         const g = d3.select(this).select('.node-card');
         refreshCard(g, d);
