@@ -2,19 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Organigrama — ARTF | acrónimo + conteo interno · CGCVT nivel intermedio</title>
+  <title>Organigrama — ARTF | acrónimo + conteo interno</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     :root{
+      /* UI base */
       --bg:#f6f8fb;
       --card:#ffffff;
       --stroke:#e5e7eb;
       --text:#0f172a;
       --muted:#475569;
+      --pill:#f3e7eb;
       --shadow:0 10px 28px rgba(15,23,42,.08);
-      --match:#0ea5e9;
+
+      /* Paleta solicitada (por profundidad) */
+      --brand:#691c32; /* depth 0 */
+      --ana1:#69631C;  /* depth 1 */
+      --ana2:#1C5669;  /* depth 2 */
+      --ana3:#BE7288;  /* depth 3 */
+      --ana4:#B3DBE8;  /* depth 4 */
+
+      --match:var(--brand);
     }
+
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
     header{
@@ -38,7 +49,7 @@
     }
     .search input{border:none;outline:none;font:600 14px ui-sans-serif,system-ui;min-width:220px}
 
-    #chart{height:calc(100vh - 100px);width:100vw;overflow:hidden}
+    #chart{height:calc(100vh - 100px);width:100vw;overflow:hidden;position:relative}
     #results{padding:8px 16px;border-top:1px solid var(--stroke);background:#fff;display:flex;gap:8px;flex-wrap:wrap}
     .chip{
       display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;
@@ -61,13 +72,20 @@
     .node-sub{font-size:12px;fill:#64748b}
     .hit{fill:transparent;cursor:pointer}
 
-    /* Burbujas (badge de acrónimo) + conteo interno */
+    /* Badge + conteo */
     .badge{pointer-events:none}
-    .badge-text{font-weight:800;font-size:10.7px;letter-spacing:.35px;text-transform:uppercase}
-    .count-tx{font-weight:800;font-size:10px;dominant-baseline:middle;text-anchor:middle}
+    .badge-bg{fill:var(--pill);stroke:#ead1d8;stroke-width:1px;rx:8;ry:8}
+    .badge-text{fill:#5b1b2f;font-weight:800;font-size:10.7px;letter-spacing:.35px;text-transform:uppercase}
+    .count-tx{fill:#fff;font-weight:800;font-size:10px;dominant-baseline:middle;text-anchor:middle}
 
-    /* Resalte de búsqueda */
-    .is-match .node-rect{stroke:var(--match);stroke-width:2.5px;filter:drop-shadow(0 6px 14px rgba(14,165,233,.18))}
+    /* Resalte búsqueda */
+    .is-match .node-rect{stroke:var(--match);stroke-width:2.5px;filter:drop-shadow(0 6px 14px rgba(105,28,50,.18))}
+
+    /* Aviso si falta data */
+    #no-data{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      color:#64748b;font-weight:700
+    }
   </style>
 </head>
 <body>
@@ -89,7 +107,7 @@
   </header>
 
   <div id="results" title="Resultados de búsqueda (clic para enfocar)"></div>
-  <div id="chart"></div>
+  <div id="chart"><div id="no-data" style="display:none">Pega tu <code>const data = {…}</code> antes de este script.</div></div>
 
   <script>
      const data = {
@@ -774,9 +792,14 @@
   (function () {
     "use strict";
 
-    if (typeof data === "undefined") {
-      console.error("Falta definir const data = {...}");
+    /* === Cargar data global (sin JSON embebido) === */
+    let dataRef = (typeof window !== 'undefined' && window.data) ? window.data : (typeof data !== 'undefined' ? data : null);
+    const noDataEl = document.getElementById('no-data');
+    if (!dataRef){
+      noDataEl.style.display = 'flex';
       return;
+    } else {
+      noDataEl.style.display = 'none';
     }
 
     const host = document.getElementById('chart');
@@ -784,16 +807,15 @@
     const inputEl = document.getElementById('q');
     const listEl  = document.getElementById('acro-list');
 
-    /* Layout visual */
-    const dx = 56;            // vertical
-    const dy = 360;           // horizontal
+    /* ===== Layout ===== */
+    const dx = 66;            // "slot" vertical
+    const dy = 360;           // separación horizontal
     const MAX_TEXT_W = 270;
     const PAD_X = 16, PAD_BOTTOM = 12;
     const BADGE_H = 18, BADGE_PAD = 8;
     const PAD_TOP = BADGE_H + BADGE_PAD + 8;
     const DEFAULT_W = MAX_TEXT_W + PAD_X*2;
-
-    /* Desplazamiento horizontal global */
+    const DEFAULT_H = 60;
     const H_OFFSET = -500;
 
     const svg  = d3.select(host).append('svg');
@@ -809,14 +831,14 @@
     /* Árbol */
     const tree = d3.tree().nodeSize([dx, dy]).separation((a,b)=> (a.parent===b.parent ? 1.2 : 1.6));
 
-    const root = d3.hierarchy(data);
+    const root = d3.hierarchy(dataRef);
     root.x0 = 0; root.y0 = 0;
 
-    /* Estado inicial: colapsado a “Direcciones” */
+    /* Mostrar todos los hijos de primer nivel */
     root.descendants().forEach(d => { d._children = d.children; d.children = null; });
     root.children = root._children; root._children = null;
 
-    /* Helpers */
+    /* ===== Helpers ===== */
     function wrap(sel, text, maxWidth, lineH){
       const words = (text||'').split(/\s+/).filter(Boolean);
       sel.text(null);
@@ -832,155 +854,169 @@
       return sel.selectAll('tspan').size();
     }
 
-    /* Paleta amplia (para minimizar repeticiones) */
-    const PALETTE = [
-      "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b",
-      "#e377c2","#7f7f7f","#bcbd22","#17becf",
-      "#003f5c","#58508d","#bc5090","#ff6361","#ffa600",
-      "#2b908f","#90ee7e","#f45b5b","#91e8e1","#7cb5ec",
-      "#434348","#f7a35c","#8085e9","#f15c80","#e4d354",
-      "#2f4554","#61a0a8","#d48265","#91c7ae","#c23531",
-      "#6a2132","#0a9396"
+    function css(varName, fallback){
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+    }
+    const PALETTE_BY_DEPTH = [
+      css('--brand','#691c32'),
+      css('--ana1','#69631C'),
+      css('--ana2','#1C5669'),
+      css('--ana3','#BE7288'),
+      css('--ana4','#B3DBE8')
     ];
-
-    function hashStr(str){ let h = 0; for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i))|0; return Math.abs(h); }
-    function nodeColor(node){
-      const key = (node.data["acrónimo"] ?? node.data["acronimo"] ?? node.data.name ?? '') + '|' + node.depth;
-      return PALETTE[ hashStr(key) % PALETTE.length ];
+    function nodeColor(d){
+      const idx = Math.max(0, d.depth) % PALETTE_BY_DEPTH.length;
+      return PALETTE_BY_DEPTH[idx];
     }
 
-    /* Utilidades de color para contraste y borde */
-    function hexToRgb(hex){
-      hex = hex.replace('#','');
-      if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
-      const num = parseInt(hex,16);
-      return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
-    }
-    function relLuminance({r,g,b}){
-      const srgb = [r,g,b].map(v => v/255).map(u => (u<=0.03928? u/12.92 : Math.pow((u+0.055)/1.055,2.4)));
-      return 0.2126*srgb[0] + 0.7152*srgb[1] + 0.0722*srgb[2];
-    }
-    function contrastText(hex){
-      const L = relLuminance(hexToRgb(hex));
-      return (L < 0.5) ? "#ffffff" : "#0f172a";
-    }
-    function shade(hex, pct){ // pct: -1..1
-      const {r,g,b} = hexToRgb(hex);
-      const t = pct < 0 ? 0 : 255;
-      const p = Math.abs(pct);
-      const R = Math.round((t - r)*p + r);
-      const G = Math.round((t - g)*p + g);
-      const B = Math.round((t - b)*p + b);
-      return "#" + [R,G,B].map(x=>x.toString(16).padStart(2,'0')).join('');
-    }
+    const getAcr = d => (d?.data?.["acrónimo"] ?? d?.data?.["acronimo"] ?? "").toString().trim();
 
-    /* Enlaces desde borde de tarjetas */
+    /* === Conteo de hijos REALES desde el JSON base === */
+    function dataKidsCount(d){
+      const kids = d?.data?.children;
+      return Array.isArray(kids) ? kids.length : 0;
+    }
+    function hasDataKids(d){ return dataKidsCount(d) > 0; }
+
+    /* Geometría de enlaces */
     const rightX = d => (d.y + ((d._box && d._box.w) || DEFAULT_W));
     const leftX  = d => d.y;
-    const elbowNodes = (s, t) => {
+    const elbow = (s, t) => {
       const sx = rightX(s), sy = s.x;
       const tx = leftX(t),  ty = t.x;
       const mx = (sx + tx) / 2;
       return `M ${sx},${sy} C ${mx},${sy} ${mx},${ty} ${tx},${ty}`;
     };
 
+    /* Evitar toggle en hojas reales */
     function toggle(d){
-      if(d.children){ d._children=d.children; d.children=null; }
-      else { d.children=d._children; d._children=null; }
+      if (!hasDataKids(d)) return;
+      if (Array.isArray(d.children) && d.children.length){
+        d._children = d.children; d.children = null;
+      } else {
+        d.children = d._children; d._children = null;
+      }
     }
 
-    /* CGCVT a nivel intermedio + alinear hijos si visibles */
-    function findCGCVT(){
+    function findByAcr(acr){
+      const up = (acr||'').toUpperCase();
       return root.descendants().find(n=>{
-        const acr = (n.data["acrónimo"] ?? n.data["acronimo"] ?? '').toUpperCase();
-        return acr === 'CGCVT';
+        const a = (n.data["acrónimo"] ?? n.data["acronimo"] ?? '').toUpperCase();
+        return a === up;
       }) || null;
     }
+
+    /* === Ajuste horizontal intermedio para CGCVT (tu lógica) === */
     function adjustMidTier(){
-      const cg = findCGCVT();
+      const cg = findByAcr('CGCVT');
       if (!cg || !cg.parent) return;
       const tier1Y = (cg.parent.y || 0) + dy;
       const midY   = (cg.parent.y || 0) + dy/2;
       cg.y = midY;
-      const kids = (cg.children || []);
-      for (const k of kids) k.y = tier1Y;
+      (cg.children||cg._children||[]).forEach(k => { if (cg.children) k.y = tier1Y; });
     }
 
-    /* Acrónimo desde JSON */
-    function getAcr(d){
-      return (d?.data?.["acrónimo"] ?? d?.data?.["acronimo"] ?? "").toString().trim();
+    /* === Desplazar UNA tarjeta hacia ABAJO cuando CGCVT esté ABIERTO (tu lógica) === */
+    function shiftSubtreeY(node, delta){
+      if (!delta || !node) return;
+      node.descendants().forEach(n => { n.x += delta; });
+    }
+    function applyOneSlotDownForCGCVT(){
+      const cg = findByAcr('CGCVT');
+      if (!cg) return;
+      if (cg.children && cg.children.length){
+        shiftSubtreeY(cg, dx);
+      }
     }
 
-    /* Pintar burbuja (badge) y conteo para que coincidan con el color de líneas del nodo */
-    function paintBadge(gCard, d){
-      const color = nodeColor(d);
-      const textColor = contrastText(color);
-      const border = shade(color, -0.25);
-
-      const badge = gCard.select('.badge');
-      const badgeBg = badge.select('.badge-bg');
-      const badgeTx = badge.select('.badge-text');
-      const countG  = badge.select('.count-pill');
-      const countBg = countG.select('rect');
-      const countTx = countG.select('text');
-
-      // Asegurar esquinas redondeadas por atributos (no CSS)
-      badgeBg.attr('rx',8).attr('ry',8);
-
-      // Colores
-      badgeBg.attr('fill', color).attr('stroke', border).attr('stroke-width', 1);
-      badgeTx.attr('fill', textColor);
-      countBg.attr('fill', color).attr('stroke', shade(color, 0.35)).attr('stroke-width', 1.2);
-      countTx.attr('fill', contrastText(color));
+    /* ===== Utilidades para regla de SP (tu lógica) ===== */
+    function subtreeExtentX(node){
+      let min = +Infinity, max = -Infinity;
+      (function walk(n){
+        min = Math.min(min, n.x);
+        max = Math.max(max, n.x);
+        if (n.children) n.children.forEach(walk);
+      })(node);
+      return {min, max};
     }
 
+    function descendantsExtentX(node){
+      if (!node.children || node.children.length === 0) return {min:+Infinity, max:-Infinity};
+      let min = +Infinity, max = -Infinity;
+      (function walk(n){
+        if (n.children) n.children.forEach(c => {
+          min = Math.min(min, c.x);
+          max = Math.max(max, c.x);
+          walk(c);
+        });
+      })(node);
+      return {min, max};
+    }
+
+    function shiftDescendantsY(node, delta){
+      if (!delta || !node || !node.children) return;
+      (function walk(n){
+        if (n.children) n.children.forEach(c => {
+          c.x += delta;
+          walk(c);
+        });
+      })(node);
+    }
+
+    function clampCGCVTChildrenBelowSP(){
+      const cg = findByAcr('CGCVT');
+      const sp = findByAcr('SP');
+      if (!cg || !sp) return;
+      if (!(cg.children && cg.children.length)) return;
+
+      const spExt = subtreeExtentX(sp);
+      const kidsExt = descendantsExtentX(cg);
+      if (!isFinite(kidsExt.min)) return;
+
+      const margin = dx;
+      const minPermitido = spExt.max + margin;
+      if (kidsExt.min < minPermitido){
+        const delta = minPermitido - kidsExt.min;
+        shiftDescendantsY(cg, delta);
+      }
+    }
+
+    /* ===== Render ===== */
     function update(source){
       tree(root);
       adjustMidTier();
+      applyOneSlotDownForCGCVT();
+      clampCGCVTChildrenBelowSP();
 
       const nodes = root.descendants();
       const links = root.links();
 
-      /* LINKS (halo + línea) */
       const linkKey = d => d.target.id || (d.target.id = Math.random().toString(36).slice(2));
 
       const linkHalo = gLinksHalo.selectAll('path').data(links, linkKey);
       linkHalo.enter().append('path')
         .attr('class','link-halo')
-        .attr('d', _ => {
-          const s0 = {x:source.x0, y:source.y0, _box:source._box, data:source.data, depth:source.depth};
-          return elbowNodes(s0, s0);
-        })
+        .attr('d', _ => elbow(source, source))
         .merge(linkHalo)
         .transition().duration(420)
-        .attr('d', d => elbowNodes(d.source, d.target));
+        .attr('d', d => elbow(d.source, d.target));
       linkHalo.exit().transition().duration(250)
-        .attr('d', _ => {
-          const s1 = {x:source.x, y:source.y, _box:source._box, data:source.data, depth:source.depth};
-          return elbowNodes(s1, s1);
-        })
+        .attr('d', _ => elbow(source, source))
         .remove();
 
       const link = gLinks.selectAll('path').data(links, linkKey);
       link.enter().append('path')
         .attr('class','link')
         .attr('stroke', d => nodeColor(d.source))
-        .attr('d', _ => {
-          const s0 = {x:source.x0, y:source.y0, _box:source._box, data:source.data, depth:source.depth};
-          return elbowNodes(s0, s0);
-        })
+        .attr('d', _ => elbow(source, source))
         .merge(link)
         .transition().duration(420)
         .attr('stroke', d => nodeColor(d.source))
-        .attr('d', d => elbowNodes(d.source, d.target));
+        .attr('d', d => elbow(d.source, d.target));
       link.exit().transition().duration(250)
-        .attr('d', _ => {
-          const s1 = {x:source.x, y:source.y, _box:source._box, data:source.data, depth:source.depth};
-          return elbowNodes(s1, s1);
-        })
+        .attr('d', _ => elbow(source, source))
         .remove();
 
-      /* NODES */
       const nodeSel = gNodes.selectAll('g.node').data(nodes, d=> d.id || (d.id = Math.random().toString(36).slice(2)));
       const enter = nodeSel.enter().append('g')
         .attr('class','node')
@@ -995,100 +1031,104 @@
       const toggleIcon = card.append('path').attr('class','toggle');
       const hit = card.append('rect').attr('class','hit');
 
-      /* Badge acrónimo */
       const badge = card.append('g').attr('class','badge');
       const badgeBg = badge.append('rect').attr('class','badge-bg');
       const badgeTx = badge.append('text').attr('class','badge-text');
 
-      /* Conteo (pill) dentro del badge */
       const countG  = badge.append('g').attr('class','count-pill');
       const countBg = countG.append('rect').attr('rx',7).attr('ry',7);
       const countTx = countG.append('text').attr('class','count-tx');
 
-      enter.each(function(d){
-        const g = d3.select(this).select('.node-card');
+      // ---- función para refrescar una tarjeta (ENTER y UPDATE) ----
+      function refreshCard(g, d){
+        const MAX_TEXT_W = 270, PAD_X = 16, PAD_BOTTOM = 12;
+        const BADGE_H = 18, BADGE_PAD = 8, PAD_TOP = BADGE_H + BADGE_PAD + 8;
 
-        // Título
         const lines = wrap(g.select('.node-title'), (d.data.name||''), MAX_TEXT_W, 16);
         const titleH = lines * 16;
 
-        // Subtítulo opcional
         const meta = (d.data.atributos||'').trim();
         let subH = 0;
         if (meta){ g.select('.node-sub').text(meta).attr('x', PAD_X).attr('dy', 16); subH = 18; }
         else { g.select('.node-sub').text(''); }
 
-        // Dimensiones
         const contentW = MAX_TEXT_W + PAD_X*2;
         const blockH = Math.max(PAD_TOP + titleH + subH + PAD_BOTTOM, 54);
 
-        // Fondo
-        rect.attr('x', 0).attr('y', -blockH/2).attr('width', contentW).attr('height', blockH);
-
-        // Texto
+        g.select('.node-rect').attr('x', 0).attr('y', -blockH/2).attr('width', contentW).attr('height', blockH);
         g.select('.node-title').attr('x', PAD_X).attr('y', -blockH/2 + PAD_TOP + 12);
         if (meta){ g.select('.node-sub').attr('y', -blockH/2 + PAD_TOP + titleH + 12); }
 
-        // Toggle
-        const hasKids = !!(d.children || d._children);
-        if (hasKids){
+        g.select('.hit').attr('x', -10).attr('y', -blockH/2 - 6).attr('width', contentW + 20).attr('height', blockH + 12);
+
+        const acr = getAcr(d);
+        g.select('.badge-text').text(acr);
+
+        const acrW = Math.max(12, g.select('.badge-text').node().getComputedTextLength());
+
+        // Conteo directo desde JSON
+        const kids = dataKidsCount(d);
+        const isOpen = Array.isArray(d.children) && d.children.length > 0;
+
+        // Triángulo solo si hay hijos
+        if (kids > 0){
           const cx = contentW - 12, cy = 0;
-          const path = d.children
+          const path = isOpen
             ? `M ${cx-6},${cy-3} L ${cx},${cy+3} L ${cx+6},${cy-3} Z`
             : `M ${cx-6},${cy+3} L ${cx},${cy-3} L ${cx+6},${cy+3} Z`;
-          toggleIcon.attr('d', path);
-        } else { toggleIcon.attr('d',''); }
-
-        // Hitbox
-        hit.attr('x', -10).attr('y', -blockH/2 - 6).attr('width', contentW + 20).attr('height', blockH + 12);
-        rect.lower();
-
-        // ===== Acrónimo desde JSON =====
-        const acr = getAcr(d);
-        badgeTx.text(acr);
-
-        // Medidas y pos del badge + conteo
-        const acrW = Math.max(12, badgeTx.node().getComputedTextLength());
-        const kidsCount = (d.children?.length ?? d._children?.length ?? 0);
-
-        // Pill de conteo (si aplica)
-        let pillW = 0, pillH = 16;
-        if (kidsCount > 0){
-          countTx.text(String(kidsCount));
-          const txtW = Math.max(7, countTx.node().getComputedTextLength());
-          pillW = Math.max(16, txtW + 10);
+          g.select('.toggle').attr('d', path);
         } else {
-          countG.style('display','none');
+          g.select('.toggle').attr('d','');
         }
 
-        // Ancho final del badge
-        let wBadge = Math.max(28, acrW + 12) + (kidsCount>0 ? (pillW + 8) : 0);
-        const maxBadge = contentW - 8;
-        if (wBadge > maxBadge) wBadge = maxBadge;
+        // Píldora de conteo: visible solo si kids>0, mostrando el número EXACTO
+        let pillW = 0, pillH = 16;
+        if (kids > 0){
+          g.select('.count-pill').style('display', null);
+          g.select('.count-tx').text(String(kids));
+          const txtW = Math.max(7, g.select('.count-tx').node().getComputedTextLength());
+          pillW = Math.max(16, txtW + 10);
+        } else {
+          g.select('.count-tx').text('');
+          g.select('.count-pill').style('display','none');
+        }
+
+        let wBadge = Math.max(28, acrW + 12) + (kids>0 ? (pillW + 8) : 0);
+        const maxBadge = contentW - 8; if (wBadge > maxBadge) wBadge = maxBadge;
 
         const bx = contentW - wBadge - 8;
         const by = -blockH/2 + 8;
 
-        badgeBg.attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
-        badgeTx.attr('x', bx + 6).attr('y', by + BADGE_H - 5);
+        g.select('.badge-bg').attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
+        g.select('.badge-text').attr('x', bx + 6).attr('y', by + BADGE_H - 5);
 
-        if (kidsCount > 0){
-          countG.style('display', null);
+        if (kids > 0){
           const cx = bx + wBadge - pillW - 6;
           const cy = by + (BADGE_H - pillH)/2;
-          countG.attr('transform', `translate(${cx},${cy})`);
-          countBg.attr('x', 0).attr('y', 0).attr('width', pillW).attr('height', pillH);
-          countTx.attr('x', pillW/2).attr('y', pillH/2);
+          g.select('.count-pill').attr('transform', `translate(${cx},${cy})`);
+          g.select('.count-pill rect')
+            .attr('x',0).attr('y',0).attr('width', pillW).attr('height', pillH)
+            .attr('fill', nodeColor(d)).attr('stroke', '#fff').attr('stroke-width', 1.2);
+          g.select('.count-tx').attr('x', pillW/2).attr('y', pillH/2);
         }
 
-        // Guardar tamaño para enlaces desde borde
         d._box = { w: contentW, h: blockH };
+      }
 
-        // Colorear burbuja/píldora para este nodo (coincide con líneas)
-        paintBadge(g, d);
+      // ENTER: dibuja y refresca tarjeta
+      enter.each(function(d){
+        const g = d3.select(this).select('.node-card');
+        refreshCard(g, d);
       });
 
       const merged = enter.merge(nodeSel);
+
+      // UPDATE: SIEMPRE refrescar tarjeta para mantener conteos correctos
+      merged.each(function(d){
+        const g = d3.select(this).select('.node-card');
+        refreshCard(g, d);
+      });
+
       merged.transition().duration(420)
         .attr('transform', d => `translate(${d.y},${d.x})`)
         .style('opacity', 1);
@@ -1097,57 +1137,6 @@
         .attr('transform', _ => `translate(${source.y},${source.x})`)
         .style('opacity', 0)
         .remove();
-
-      // Reposicionar y recolorear en cada actualización
-      merged.each(function(d){
-        const g = d3.select(this).select('.node-card');
-
-        // Reafirmar acrónimo
-        g.select('.badge-text').text(getAcr(d));
-
-        // Reposicionar badge + conteo
-        const kidsCount = (d.children?.length ?? d._children?.length ?? 0);
-        const contentW = (d._box?.w) || DEFAULT_W;
-        const blockH   = (d._box?.h) || 60;
-
-        const badgeTx = g.select('.badge-text');
-        const badgeBg = g.select('.badge-bg');
-        const countG  = g.select('.count-pill');
-        const countBg = countG.select('rect');
-        const countTx = countG.select('text');
-
-        const acrW = Math.max(12, badgeTx.node().getComputedTextLength());
-        let pillW = 0, pillH = 16;
-        if (kidsCount > 0){
-          countG.style('display', null);
-          countTx.text(String(kidsCount));
-          const txtW = Math.max(7, countTx.node().getComputedTextLength());
-          pillW = Math.max(16, txtW + 10);
-        } else {
-          countG.style('display', 'none');
-        }
-
-        let wBadge = Math.max(28, acrW + 12) + (kidsCount>0 ? (pillW + 8) : 0);
-        const maxBadge = contentW - 8;
-        if (wBadge > maxBadge) wBadge = maxBadge;
-
-        const bx = contentW - wBadge - 8;
-        const by = -blockH/2 + 8;
-
-        badgeBg.attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
-        badgeTx.attr('x', bx + 6).attr('y', by + BADGE_H - 5);
-
-        if (kidsCount > 0){
-          const cx = bx + wBadge - pillW - 6;
-          const cy = by + (BADGE_H - pillH)/2;
-          countG.attr('transform', `translate(${cx},${cy})`);
-          countBg.attr('width', pillW).attr('height', pillH);
-          countTx.attr('x', pillW/2).attr('y', pillH/2);
-        }
-
-        // Recolorear para mantener coincidencia con líneas
-        paintBadge(g, d);
-      });
 
       root.descendants().forEach(d => { d.x0 = d.x; d.y0 = d.y; });
     }
@@ -1166,14 +1155,16 @@
     }
     function focusOn(d, scale=1.15){
       const w = host.clientWidth, h = host.clientHeight;
-      const box = d._box || {w: DEFAULT_W, h: 60};
+      const box = d._box || {w: DEFAULT_W, h: DEFAULT_H};
       const tx = w/2 - (d.y + box.w/2) * scale;
       const ty = h/2 - (d.x) * scale;
       svg.transition().duration(450).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
     }
 
-    // Render inicial + auto-fit
+    // Render inicial
     update(root);
+
+    // Auto-fit
     function autoFit(){
       let tries = 0, maxTries = 24;
       const tick = () => {
@@ -1200,10 +1191,9 @@
     document.getElementById('btn-collapse').onclick = ()=>{ collapseAll(); root.children = root._children; root._children=null; update(root); setTimeout(()=>fitToScreen(60), 30); };
     document.getElementById('btn-fit').onclick = ()=> fitToScreen(60);
 
-    /* Buscador por ACRÓNIMO */
+    /* ===== Buscador por ACRÓNIMO ===== */
     const allNodes = root.descendants();
-    const indexAcr = new Map();
-    const acroSet = new Set();
+    const indexAcr = new Map(); const acroSet = new Set();
     for (const n of allNodes){
       const acr = getAcr(n).toUpperCase();
       acroSet.add(acr);
