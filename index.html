@@ -1259,9 +1259,8 @@
 <script type="module">
   import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
 
-  const brand =
-    getComputedStyle(document.documentElement)
-      .getPropertyValue('--brand').trim() || '#691c32';
+  const brand = getComputedStyle(document.documentElement)
+                 .getPropertyValue('--brand').trim() || '#691c32';
 
   Chatbot.init({
     chatflowid: "8f1072cf-0f9d-400e-974e-93d2c3ed6d3a",
@@ -1270,10 +1269,13 @@
       button: { backgroundColor: brand, right: 20, bottom: 20 },
       chatWindow: {
         title: "Asistente ARTF",
-        welcomeMessage: "Hola 👋, ¿Dudas con el organigrama? Pídeme ayuda"
-        zIndex: 9999,
+        welcomeMessage: "Hola 👋, ¿Dudas con el Organigrama? Pídeme Ayuda",
         userMessage: { backgroundColor: brand, textColor: "#fff" },
-        textInput:   { sendButtonColor: brand }
+        textInput: {
+          placeholder: "Escribe tu pregunta…",   // 👈 aquí cambias el texto
+          sendButtonColor: brand,
+          autoFocus: true
+        }
       }
     }
   });
@@ -1281,6 +1283,7 @@
 
 </body>
 </html>
+
 
 
 
