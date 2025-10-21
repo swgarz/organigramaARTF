@@ -1252,7 +1252,35 @@
   })();
     
   </script>
+  <!-- cierra tu script del organigrama -->
+</script>
+
+<!-- Flowise como módulo: en un bloque NUEVO y separado -->
+<script type="module">
+  import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
+
+  const brand =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue('--brand').trim() || '#691c32';
+
+  Chatbot.init({
+    chatflowid: "8f1072cf-0f9d-400e-974e-93d2c3ed6d3a",
+    apiHost: "https://daniel.fixtergeek.com",
+    theme: {
+      button: { backgroundColor: brand, right: 20, bottom: 20 },
+      chatWindow: {
+        title: "Asistente ARTF",
+        welcomeMessage: "Hola 👋 ¿en qué te ayudo con el organigrama?",
+        zIndex: 9999,
+        userMessage: { backgroundColor: brand, textColor: "#fff" },
+        textInput:   { sendButtonColor: brand }
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
+
 
 
