@@ -12,6 +12,7 @@
       --brand:#691c32; --ana1:#69631C; --ana2:#1C5669; --ana3:#BE7288; --ana4:#B3DBE8;
       --top1:#16a34a; --top2:#8b5cf6; --top3:#ec4899; --top4:#f59e0b; --top5:#f97316; --top6:#ef4444;
       --top7:#64748b; --top8:#14b8a6; --top9:#3b82f6; --match:var(--brand);
+      --accent:#3b82f6;
     }
     [data-theme="dark"]{
       --bg:#0b1220; --card:#0f172a; --stroke:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --pill:#1f2937; --shadow:0 12px 32px rgba(0,0,0,.35);
@@ -40,6 +41,12 @@
     [data-institutional="on"] .badge-bg{ fill:rgba(105,28,50,.10); stroke:rgba(105,28,50,.28); }
     [data-institutional="on"] .badge-text{ fill:#691c32; }
     [data-institutional="on"] .node-rect{ stroke:rgba(105,28,50,.22); }
+    [data-institutional="on"] .btn:hover{
+      background:rgba(255,255,255,.20) !important;
+      border-color:rgba(255,255,255,.48) !important;
+      transform: translateY(-1px) scale(1.035);
+      box-shadow: 0 6px 14px rgba(0,0,0,.18);
+    }
     /* ======================================== */
 
     *{box-sizing:border-box}
@@ -52,13 +59,41 @@
     [data-theme="dark"] header{ background:rgba(15,23,42,.85); }
     h1{font-size:16px;margin:0}
     .toolbar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .btn{padding:8px 12px;border:1px solid var(--stroke);border-radius:10px;background:#fff;font-weight:600;cursor:pointer;transition:.15s ease}
-    [data-theme="dark"] .btn{ background:#111827; color:#e5e7eb; }
+
+    /* Botones (con hover scale para todos) */
+    .btn{
+      padding:8px 12px;border:1px solid var(--stroke);border-radius:10px;background:#fff;font-weight:600;cursor:pointer;
+      position: relative;
+      transform: translateY(0) scale(1);
+      transition:
+        background-color .18s ease,
+        border-color .18s ease,
+        box-shadow .18s ease,
+        transform .16s cubic-bezier(.2,.8,.2,1);
+      will-change: transform, box-shadow, background-color, border-color;
+    }
+    [data-theme="dark"] .btn{ background:#111827; color:#e5e7eb; border-color:#1f2937; }
+    .btn:hover{
+      background:#f8fafc; border-color:#cbd5e1;
+      transform: translateY(-1px) scale(1.035);
+      box-shadow:0 8px 18px rgba(2,6,23,.10);
+    }
+    .btn:active{ transform:translateY(0) scale(0.997); box-shadow: inset 0 2px 0 rgba(0,0,0,.04); }
+    .btn:focus-visible{
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.35);
+    }
+    [data-theme="dark"] .btn:hover{
+      background:#1f2937; border-color:#334155;
+      transform: translateY(-1px) scale(1.035);
+      box-shadow:0 10px 20px rgba(0,0,0,.35);
+    }
+
     .search{display:flex;gap:8px;align-items:center;background:#fff;padding:6px;border:1px solid var(--stroke);border-radius:12px}
     [data-theme="dark"] .search{ background:#0b1220; }
     .search input{border:none;outline:none;font:600 14px ui-sans-serif,system-ui;min-width:220px;background:transparent;color:var(--text)}
 
-    /* Nota debajo de los botones derechos */
+    /* Nota y pista de uso */
     .note{
       flex-basis:100%;
       text-align:right;
@@ -67,9 +102,10 @@
       color:var(--muted);
       margin-top:4px;
     }
+    .note .short{ display:none; } /* se muestra solo en mobile */
     [data-institutional="on"] .note{ color:#fff; opacity:.9; }
 
-    #chart{height:calc(100vh - 120px);width:100vw;overflow:hidden;position:relative}
+    #chart{height:calc(100vh - 132px);width:100vw;overflow:hidden;position:relative}
     #results{padding:8px 16px;border-top:1px solid var(--stroke);background:#fff;display:flex;gap:8px;flex-wrap:wrap}
     [data-theme="dark"] #results{ background:#0b1220; }
     .chip{display:inline-flex;align-items:center;gap:8px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;padding:6px 10px;border-radius:999px;cursor:pointer}
@@ -96,6 +132,88 @@
     .is-match .node-rect{stroke:var(--match);stroke-width:2.5px;filter:drop-shadow(0 6px 14px rgba(105,28,50,.18))}
     #no-data{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;font-weight:700}
     [data-theme="dark"] #no-data{ color:#94a3b8; }
+
+    /* Resaltado temporal con “pulso” */
+    @keyframes pulseRing {
+      0%{ box-shadow: 0 0 0 0 rgba(105,28,50,.42); }
+      70%{ box-shadow: 0 0 0 12px rgba(105,28,50,0); }
+      100%{ box-shadow: 0 0 0 0 rgba(105,28,50,0); }
+    }
+    .is-highlight .node-rect{
+      stroke: var(--match);
+      stroke-width: 3px;
+      animation: pulseRing 1.2s ease-out 0s 2;
+    }
+
+    /* Pista de uso fija (10s, con resalto fuerte al inicio) */
+    .hint{
+      position:absolute; left:16px; bottom:12px; z-index:4;
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--stroke);
+      color: var(--muted);
+      padding:6px 10px; border-radius:10px; font-weight:700; font-size:12.5px;
+      backdrop-filter: blur(6px);
+      animation: hintAttention 10s ease-out forwards;
+    }
+    [data-theme="dark"] .hint{ background: rgba(15,23,42,.85); }
+    .hint.no-export{ display:none !important; }
+    @media print{ .hint{ display:none !important; } }
+
+    @keyframes hintAttention{
+      0%   { opacity:1; transform: translateY(0) scale(1.02);
+             box-shadow: 0 12px 28px rgba(2,6,23,.18), 0 0 0 0 rgba(59,130,246,.60); }
+      6%   { transform: translateY(-3px) scale(1.04);
+             box-shadow: 0 12px 28px rgba(2,6,23,.22), 0 0 0 16px rgba(59,130,246,0); }
+      12%  { transform: translateY(0) scale(1.02);
+             box-shadow: 0 12px 28px rgba(2,6,23,.18), 0 0 0 0 rgba(59,130,246,.55); }
+      18%  { transform: translateY(-2px) scale(1.03);
+             box-shadow: 0 12px 28px rgba(2,6,23,.20), 0 0 0 12px rgba(59,130,246,0); }
+      40%  { opacity:.95; transform: translateY(0) scale(1); }
+      80%  { opacity:.50; }
+      100% { opacity:0; pointer-events: none; }
+    }
+
+    /* ===== Botón “Descargar PDF” (con hover scale) ===== */
+    .btn.fancy{
+      width: 170px; height: 38px; border-radius: 24px;
+      border: 3px solid #ff304f; background: none;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      overflow:hidden;
+      transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease;
+    }
+    .btn.fancy .lbl, .btn.fancy svg{
+      position: absolute; letter-spacing: 1.2px; font-weight: 800; text-transform: uppercase;
+      color:#002651; fill: transparent;
+    }
+    .btn.fancy svg{ width:20px; height:20px; }
+    .btn.fancy:hover{
+      transform: translateY(-1px) scale(1.04);
+      box-shadow: 0 8px 18px rgba(2,6,23,.10);
+    }
+    .btn.fancy.animating{
+      width: 54px; border-left: 3px solid #1e2a78; border-bottom: 3px solid #1e2a78;
+      animation: spin 1800ms 200ms forwards ease-in-out;
+    }
+    .btn.fancy.animating .lbl{ color: transparent; }
+    .btn.fancy.animating svg{ animation: check 500ms 1800ms forwards ease-out; }
+    @keyframes spin {
+      80% { border: 3px solid transparent; border-left: 3px solid #303a52; }
+      100% { transform: rotate(1080deg); border: 3px solid #303a52; }
+    }
+    @keyframes check { to { fill: #17b978; } }
+    [data-institutional="on"] .btn.fancy .lbl,
+    [data-theme="dark"] .btn.fancy .lbl{ color:#fff !important; }
+
+    /* ======= Ajustes MOBILE (≤768px) ======= */
+    @media (max-width:768px){
+      header{ gap:8px; }
+      .search input{ min-width: 140px; }
+      /* Oculta TODO menos Descargar PDF en la toolbar */
+      .toolbar .btn.hide-m { display: none !important; }
+      /* Nota corta en móvil */
+      .note .full{ display:none; }
+      .note .short{ display:inline; }
+    }
   </style>
 </head>
 <body>
@@ -103,25 +221,39 @@
     <h1>Organigrama · ARTF</h1>
 
     <div class="search">
-      <input id="q" list="acro-list" placeholder="Buscar por acrónimo o nombre… ej. DRTF / Direcci\u00f3n de Regulaci\u00f3n" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      <input id="q" list="acro-list" placeholder="Buscar por acrónimo o nombre…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
       <datalist id="acro-list"></datalist>
       <button class="btn" id="btn-search">Buscar</button>
       <button class="btn" id="btn-clear">Limpiar</button>
     </div>
 
     <div class="toolbar">
-      <button class="btn" id="btn-inst" title="Aplicar colores institucionales">Modo institucional</button>
-      <button class="btn" id="btn-theme" title="Alternar claro/oscuro">Modo oscuro</button>
-      <button class="btn" id="btn-expand">Expandir todo</button>
-      <button class="btn" id="btn-collapse">Colapsar todo</button>
-      <button class="btn" id="btn-fit">Ajustar</button>
+      <!-- Estos se OCULTAN en móvil -->
+      <button class="btn hide-m" id="btn-inst" title="Aplicar colores institucionales">Modo institucional</button>
+      <button class="btn hide-m" id="btn-theme" title="Alternar claro/oscuro">Modo oscuro</button>
+      <button class="btn hide-m" id="btn-expand">Expandir todo</button>
+      <button class="btn hide-m" id="btn-collapse">Colapsar todo</button>
+      <button class="btn hide-m" id="btn-fit">Ajustar</button>
+
+      <!-- Este permanece visible (móvil y desktop) -->
+      <button class="btn fancy noselect" id="btn-download" title="Descargar PDF del organigrama">
+        <span class="lbl">Descargar PDF</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M0 11c2.761.575 6.312 1.688 9 3.438 3.157-4.23 8.828-8.187 15-11.438-5.861 5.775-10.711 12.328-14 18.917-2.651-3.766-5.547-7.271-10-10.917z"/></svg>
+      </button>
     </div>
 
-    <div class="note">Dirección de Procesos Administrativos de Obras | Subdirección de Implementación de Manuales y Procedimientos de Obra</div>
+    <!-- Nota: larga en desktop, corta en mobile -->
+    <div class="note">
+      <span class="full">Dirección de Procesos Administrativos de Obras | Subdirección de Implementación de Manuales y Procedimientos de Obra</span>
+      <span class="short">DPAO | SIMPO</span>
+    </div>
   </header>
 
   <div id="results" title="Resultados de búsqueda (clic para enfocar)"></div>
-  <div id="chart"><div id="no-data" style="display:none">Pega tu data</div></div>
+  <div id="chart">
+    <div id="no-data" style="display:none">Pega tu data</div>
+    <div class="hint">Haz clic fuera del diagrama y arrastra para ajustar la posición. Usa la rueda para hacer zoom.</div>
+  </div>
 
   <!-- JSON embebido (TU DATA) -->
   <script>
@@ -618,8 +750,8 @@
                 {
                   "name": "Dirección de Material Rodante y Sistemas Ferroviarios", "acrónimo": "DMRSF",
                   "children": [
-                    {"name": "Subdirección de Material Rodante", "acrónimo": "JDIF"},
-                    {"name": "Subdirección de Sistemas Ferroviarios y Mantenimiento", "acrónimo": "JDIF"}
+                        {"name": "Subdirección de Material Rodante", "acrónimo": "JDIF"},
+                        {"name": "Subdirección de Sistemas Ferroviarios y Mantenimiento", "acrónimo": "JDIF"}
                   ]
                 }
               ]
@@ -801,7 +933,7 @@
     };
   </script>
 
-  <!-- LÓGICA D3 + UI (hijos CGCVT juntos; separo solo NIETOS) -->
+  <!-- LÓGICA D3 + UI -->
   <script>
   (function () {
     "use strict";
@@ -811,7 +943,7 @@
     const MAX_TEXT_W = 270, PAD_X = 16, PAD_BOTTOM = 12, BADGE_H = 18, BADGE_PAD = 8,
           PAD_TOP = BADGE_H + BADGE_PAD + 8, DEFAULT_W = MAX_TEXT_W + PAD_X*2, DEFAULT_H = 60;
 
-    const dataRef = data; // sin window
+    const dataRef = data;
 
     const host = document.getElementById('chart');
     const resultsEl = document.getElementById('results');
@@ -846,7 +978,7 @@
         if (tspan.node().getComputedTextLength() > maxWidth){
           line.pop(); tspan.text(line.join(' '));
           line = [words[i]];
-          tspan = sel.append('tspan').attr('x', PAD_X).attr('dy', lineH).text(words[i]);
+          tspan = sel.append('tspan').attr('x', PAD_X).attr('dy', 16).text(words[i]);
         }
       }
       return sel.selectAll('tspan').size();
@@ -928,7 +1060,7 @@
       return {min, max};
     }
 
-    /* Alineación general de CGCVT a media altura y una columna al frente */
+    /* Alineaciones específicas CGCVT */
     function adjustMidTier(){
       const cg = findByAcr('CGCVT'); if (!cg || !cg.parent) return;
       const tier1Y = (cg.parent.y || 0) + dy;
@@ -951,39 +1083,28 @@
       const minPermitido = spExt.max + margin;
       if (kidsExt.min < minPermitido){
         const delta = minPermitido - kidsExt.min;
-        shiftDescendantsY(cg, delta); // mueve SOLO descendientes (los 3 hijos permanecen juntos)
+        shiftDescendantsY(cg, delta);
       }
     }
-
-    /* ====== CLAVE: Mantener juntos los 3 hijos de CGCVT
-       y separar SOLO sus NIETOS para evitar encime ====== */
     function separateCGCVTGrandchildren(gap = dx * 2.2){
       const cg = findByAcr('CGCVT'); if (!cg) return;
       const kids = (cg.children || cg._children || []);
       if (!kids.length) return;
-
-      // Calculamos extents SOLO de descendientes (excluyendo al propio hijo)
       const items = kids.map(k => {
         const ext = descendantsExtentX_exclSelf(k);
-        // si no tiene descendientes abiertos, usamos su propia x para ordenar
         if (!isFinite(ext.min) || !isFinite(ext.max)) { ext.min = k.x; ext.max = k.x; }
         return { node:k, ext };
       }).sort((a,b) => a.ext.min - b.ext.min);
-
-      // Enforce: no-overlap entre descendientes, sin mover la tarjeta del hijo
       for (let i=1; i<items.length; i++){
         const prev = items[i-1];
         const cur  = items[i];
         const needMin = prev.ext.max + gap;
         if (cur.ext.min < needMin){
           const delta = needMin - cur.ext.min;
-          shiftDescendantsY(cur.node, delta); // mueve NIETOS, no el hijo
-          cur.ext.min += delta;
-          cur.ext.max += delta;
+          shiftDescendantsY(cur.node, delta);
         }
       }
     }
-
     function shiftSubtreeH(node, delta){ node.descendants().forEach(n => { n.y += delta; }); }
     function promoteChildrenOneColumnUnder(acrList){
       acrList.forEach(acr => {
@@ -999,7 +1120,6 @@
       adjustMidTier();
       applyOneSlotDownForCGCVT();
 
-      // Mantener juntos los 3 hijos; solo muevo NIETOS
       promoteChildrenOneColumnUnder(['DGT','DGO','DGCGIO']);
       separateCGCVTGrandchildren(dx * 2.2);
       clampCGCVTChildrenBelowSP();
@@ -1037,7 +1157,7 @@
       countG.append('text').attr('class','count-tx');
 
       function refreshCard(g, d){
-        const lines = wrap(g.select('.node-title'), (d.data.name||''), MAX_TEXT_W, 16);
+        const lines = wrap(g.select('.node-title'), (d.data.name||''), 270, 16);
         const titleH = lines * 16;
 
         const meta = (d.data.atributos||'').trim();
@@ -1045,12 +1165,12 @@
         if (meta){ g.select('.node-sub').text(meta).attr('x', 16).attr('dy', 16); subH = 18; }
         else { g.select('.node-sub').text(''); }
 
-        const contentW = MAX_TEXT_W + 32;
-        const blockH = Math.max(PAD_TOP + titleH + subH + PAD_BOTTOM, 54);
+        const contentW = 270 + 32;
+        const blockH = Math.max(48 + titleH + subH + 12, 54);
 
         g.select('.node-rect').attr('x', 0).attr('y', -blockH/2).attr('width', contentW).attr('height', blockH);
-        g.select('.node-title').attr('x', 16).attr('y', -blockH/2 + PAD_TOP + 12);
-        if (meta){ g.select('.node-sub').attr('y', -blockH/2 + PAD_TOP + titleH + 12); }
+        g.select('.node-title').attr('x', 16).attr('y', -blockH/2 + 48 + 12);
+        if (meta){ g.select('.node-sub').attr('y', -blockH/2 + 48 + titleH + 12); }
 
         g.select('.hit').attr('x', -10).attr('y', -blockH/2 - 6).attr('width', contentW + 20).attr('height', blockH + 12);
 
@@ -1086,12 +1206,12 @@
         const bx = contentW - wBadge - 8;
         const by = -blockH/2 + 8;
 
-        g.select('.badge-bg').attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', BADGE_H);
-        g.select('.badge-text').attr('x', bx + 6).attr('y', by + BADGE_H - 5);
+        g.select('.badge-bg').attr('x', bx).attr('y', by).attr('width', wBadge).attr('height', 18);
+        g.select('.badge-text').attr('x', bx + 6).attr('y', by + 18 - 5);
 
         if (kids > 0){
           const cx = bx + wBadge - pillW - 6;
-          const cy = by + (BADGE_H - pillH)/2;
+          const cy = by + (18 - pillH)/2;
           g.select('.count-pill').attr('transform', `translate(${cx},${cy})`);
           g.select('.count-pill rect')
             .attr('x',0).attr('y',0).attr('width', pillW).attr('height', pillH)
@@ -1121,19 +1241,37 @@
       const w = host.clientWidth, h = host.clientHeight;
       const scale = Math.min(0.75, Math.max(0.5, Math.min((w - pad*2)/bbox.width, (h - pad*2)/bbox.height)));
       let tx = (w - bbox.width * scale)/2 - bbox.x * scale;
-      tx += ORG_X_OFFSET;
+      tx += -450;
       const ty = (h - bbox.height* scale)/2 - bbox.y * scale;
       svg.transition().duration(420).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
     }
+    function goHome(){ fitToScreen(60); }
 
     function focusOnKeepScale(d){
       const tr = d3.zoomTransform(svg.node());
       const k = tr.k;
       const w = host.clientWidth, h = host.clientHeight;
-      const box = d._box || {w: DEFAULT_W, h: DEFAULT_H};
-      const tx = w/2 - (d.y + box.w/2) * k + ORG_X_OFFSET;
+      const box = d._box || {w: 300, h: 60};
+      const tx = w/2 - (d.y + box.w/2) * k - 450;
       const ty = h/2 - (d.x) * k;
       svg.transition().duration(450).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+    }
+
+    function panNodeIntoViewY(node, margin = 48){
+      if (!node) return;
+      const tr = d3.zoomTransform(svg.node());
+      const k  = tr.k;
+      const h  = host.clientHeight;
+      const box = node._box || { w: 300, h: 60 };
+      const nodeTop    = (node.x - box.h/2) * k + tr.y;
+      const nodeBottom = (node.x + box.h/2) * k + tr.y;
+      const above = nodeTop < margin;
+      const below = nodeBottom > (h - margin);
+      if (above || below){
+        const targetY = Math.round(h/2 - (node.x * k));
+        const t = d3.zoomIdentity.translate(tr.x, targetY).scale(k);
+        svg.transition().duration(520).ease(d3.easeCubicOut).call(zoom.transform, t);
+      }
     }
 
     update(root);
@@ -1157,18 +1295,22 @@
     document.getElementById('btn-fit').onclick = ()=> fitToScreen(60);
 
     /* ===== Buscador ===== */
-    const allNodes = flattenAll(root);
+    const allNodes = (function flattenAll(node){
+      const out = [];
+      (function walk(n){ out.push(n); const kids = (n.children || n._children) || []; for (const k of kids) walk(k); })(node);
+      return out;
+    })(root);
 
     const indexAcr = new Map();
     const acroSetForList = new Set();
     for (const n of allNodes){
-      const acr = norm(getAcr(n));
+      const acr = (n?.data?.["acrónimo"] ?? n?.data?.["acronimo"] ?? "").toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase().trim();
       if (acr){ acroSetForList.add(acr); if (!indexAcr.has(acr)) indexAcr.set(acr, []); indexAcr.get(acr).push(n); }
     }
 
     function refreshDatalist(prefix){
       listEl.innerHTML = '';
-      const q = norm(prefix || '');
+      const q = (prefix || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase().trim();
       if (!q) return;
       const items = Array.from(acroSetForList).filter(a => a.startsWith(q)).sort();
       for (const acr of items){
@@ -1180,112 +1322,11 @@
     inputEl.addEventListener('input', (e)=> refreshDatalist(e.target.value));
 
     function clearMatches(){
-      gNodes.selectAll('g.node').classed('is-match', false);
+      d3.select('.nodes').selectAll('g.node').classed('is-match', false).classed('is-highlight', false);
       resultsEl.innerHTML = '';
     }
 
     function showResults(qRaw){
       clearMatches();
-      const query = norm(qRaw || inputEl.value);
-      if (!query){ return; }
 
-      let matches = [];
-
-      if (indexAcr.has(query)){ matches = matches.concat(indexAcr.get(query)); }
-      if (matches.length === 0){
-        for (const [acr, arr] of indexAcr){ if (acr.includes(query)) matches = matches.concat(arr); }
-      }
-      if (matches.length === 0){
-        for (const n of allNodes){ const nm = norm(n.data?.name || ''); if (nm && nm.includes(query)) matches.push(n); }
-      }
-
-      if (matches.length === 0){
-        resultsEl.innerHTML = `<span class="chip">Sin resultados para <b>${query}</b></span>`;
-        return;
-      }
-
-      matches.forEach(n => expandPathTo(n));
-      update(root);
-
-      const seen = new Set(), unique = [];
-      for (const n of matches){ if (!seen.has(n)) { seen.add(n); unique.push(n); } }
-
-      const ids = new Set(unique.map(n => n.id));
-      gNodes.selectAll('g.node').classed('is-match', d => ids.has(d.id));
-
-      resultsEl.innerHTML = '';
-      unique.forEach((n, i) => {
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        const acr = getAcr(n);
-        chip.innerHTML = `<b>${acr || '—'}</b> · ${n.data.name}`;
-        chip.onclick = () => { focusOnKeepScale(n); };
-        resultsEl.appendChild(chip);
-        if (i === 0) setTimeout(()=> focusOnKeepScale(n), 80);
-      });
-    }
-
-    document.getElementById('btn-search').onclick = ()=> showResults();
-    inputEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') showResults(); });
-    document.getElementById('btn-clear').onclick = ()=>{ inputEl.value = ''; refreshDatalist(''); clearMatches(); fitToScreen(60); };
-
-    /* Tema claro/oscuro + Institucional */
-    const htmlEl  = document.documentElement;
-    const btnTheme= document.getElementById('btn-theme');
-    const btnInst = document.getElementById('btn-inst');
-    let baseTheme = 'light';
-    function setThemeAttr(val){ htmlEl.setAttribute('data-theme', val); }
-    btnTheme.addEventListener('click', ()=>{
-      baseTheme = (baseTheme === 'light') ? 'dark' : 'light';
-      setThemeAttr(baseTheme);
-      btnTheme.textContent = (baseTheme === 'dark') ? 'Modo luz' : 'Modo oscuro';
-      update(root);
-    });
-    setThemeAttr(baseTheme);
-
-    btnInst.addEventListener('click', ()=>{
-      instOn = !instOn;
-      htmlEl.setAttribute('data-institutional', instOn ? 'on' : 'off');
-      document.getElementById('btn-inst').textContent = instOn ? 'Institucional: ON' : 'Modo institucional';
-      update(root);
-    });
-  })();
-    
-  </script>
-  <!-- cierra tu script del organigrama -->
-</script>
-
-<!-- Flowise como módulo: en un bloque NUEVO y separado -->
-<script type="module">
-  import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
-
-  const brand = getComputedStyle(document.documentElement)
-                 .getPropertyValue('--brand').trim() || '#691c32';
-
-  Chatbot.init({
-    chatflowid: "8f1072cf-0f9d-400e-974e-93d2c3ed6d3a",
-    apiHost: "https://daniel.fixtergeek.com",
-    theme: {
-      button: { backgroundColor: brand, right: 20, bottom: 20 },
-      chatWindow: {
-        title: "Asistente ARTF",
-        welcomeMessage: "Hola 👋, ¿Dudas con el Organigrama? Pídeme Ayuda",
-        userMessage: { backgroundColor: brand, textColor: "#fff" },
-        textInput: {
-          placeholder: "Escribe tu pregunta…",   // 👈 aquí cambias el texto
-          sendButtonColor: brand,
-          autoFocus: true
-        }
-      }
-    }
-  });
-</script>
-
-</body>
-</html>
-
-
-
-
-
-
+      const query = (qRaw || inputEl.value || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase().trim();
